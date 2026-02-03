@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=mesh-drop
+Exec=mesh-drop
+Icon=mesh-drop
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false
