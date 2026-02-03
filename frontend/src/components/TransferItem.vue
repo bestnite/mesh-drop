@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, h } from "vue";
 import {
   NCard,
   NButton,
@@ -9,6 +9,7 @@ import {
   NText,
   NTag,
   useMessage,
+  NInput,
 } from "naive-ui";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -16,11 +17,16 @@ import {
   faArrowDown,
   faCircleExclamation,
   faUser,
+  faFile,
+  faFileLines,
+  faFolder,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
 import { ResolvePendingRequest } from "../../bindings/mesh-drop/internal/transfer/service";
 import { Dialogs, Clipboard } from "@wailsio/runtime";
+
+import { useDialog } from "naive-ui";
 
 const props = defineProps<{
   transfer: Transfer;
@@ -86,6 +92,20 @@ const handleCopy = async () => {
       message.error("Failed to copy to clipboard");
     });
 };
+
+const dialog = useDialog();
+const handleOpen = async () => {
+  const d = dialog.create({
+    title: "Text Content",
+    content: () =>
+      h(NInput, {
+        value: props.transfer.text,
+        readonly: true,
+        type: "textarea",
+        rows: 10,
+      }),
+  });
+};
 </script>
 
 <template>
@@ -114,15 +134,27 @@ const handleCopy = async () => {
             v-if="props.transfer.content_type === 'file'"
             strong
             class="filename"
-            :title="props.transfer.file_name"
-            >{{ props.transfer.file_name }}</n-text
-          >
+            :title="props.transfer.file_name">
+            <n-icon>
+              <FontAwesomeIcon :icon="faFile" />
+            </n-icon>
+            {{ props.transfer.file_name }}
+          </n-text>
           <n-text
             v-else-if="props.transfer.content_type === 'text'"
             strong
             class="filename"
-            title="Text"
-            >Text</n-text
+            title="Text">
+            <n-icon> <FontAwesomeIcon :icon="faFileLines" /> </n-icon>
+            Text</n-text
+          >
+          <n-text
+            v-else-if="props.transfer.content_type === 'folder'"
+            strong
+            class="filename"
+            title="Folder">
+            <n-icon> <FontAwesomeIcon :icon="faFolder" /> </n-icon>
+            {{ props.transfer.file_name || "Folder" }}</n-text
           >
           <n-tag
             size="small"
@@ -208,7 +240,7 @@ const handleCopy = async () => {
         </n-space>
       </div>
 
-      <!-- 复制按钮 -->
+      <!-- 文本传输按钮 -->
       <div
         class="actions-wrapper"
         v-if="
@@ -217,6 +249,9 @@ const handleCopy = async () => {
           props.transfer.content_type === 'text'
         ">
         <n-space>
+          <n-button size="small" type="success" @click="handleOpen"
+            >Open</n-button
+          >
           <n-button size="small" type="success" @click="handleCopy"
             >Copy</n-button
           >

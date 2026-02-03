@@ -40,6 +40,7 @@ import {
   GetTransferList,
   SendFile,
   SendText,
+  SendFolder,
 } from "../../bindings/mesh-drop/internal/transfer/service";
 import { Dialogs, Clipboard } from "@wailsio/runtime";
 
@@ -115,8 +116,6 @@ const pendingCount = computed(() => {
 
 // --- 操作 ---
 
-const dialog = useDialog();
-
 const handleSendFile = async (ip: string) => {
   try {
     const filePath = await Dialogs.OpenFile({
@@ -134,9 +133,21 @@ const handleSendFile = async (ip: string) => {
 };
 
 const handleSendFolder = async (ip: string) => {
-  // TODO
+  const opts: Dialogs.OpenFileDialogOptions = {
+    Title: "Select folder to send",
+    CanChooseDirectories: true,
+    CanChooseFiles: false,
+    AllowsMultipleSelection: false,
+  };
+  const folderPath = await Dialogs.OpenFile(opts);
+  if (!folderPath) return;
+  const peer = await GetPeerByIP(ip);
+  if (!peer) return;
+  await SendFolder(peer, ip, folderPath as string);
+  activeKey.value = "transfers";
 };
 
+const dialog = useDialog();
 const handleSendText = (ip: string) => {
   const textContent = ref("");
   const d = dialog.create({

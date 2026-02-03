@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"archive/tar"
 	"bytes"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -215,7 +217,7 @@ func (s *Service) handleUpload(c *gin.Context) {
 		s.transferList.Store(task.ID, task)
 		s.app.Event.Emit("transfer:refreshList")
 	case ContentTypeFolder:
-		// s.receiveFolder(c, savePath, task)
+		s.receiveFolder(c, savePath, &task)
 	}
 }
 
@@ -230,7 +232,7 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer) {
 				Total:   total,
 				Speed:   speed,
 			}
-			s.transferList.Store(task.ID, task)
+			s.transferList.Store(task.ID, *task)
 			s.app.Event.Emit("transfer:refreshList")
 		},
 	}
@@ -245,7 +247,7 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer) {
 		slog.Error("Failed to write file", "error", err, "component", "transfer")
 		task.Status = TransferStatusError
 		task.ErrorMsg = fmt.Errorf("failed to write file: %v", err).Error()
-		s.transferList.Store(task.ID, task)
+		s.transferList.Store(task.ID, *task)
 		// 通知前端传输失败
 		s.app.Event.Emit("transfer:refreshList")
 		return
@@ -257,7 +259,91 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer) {
 	})
 	// 传输成功，任务结束
 	task.Status = TransferStatusCompleted
-	s.transferList.Store(task.ID, task)
+	s.transferList.Store(task.ID, *task)
+	s.app.Event.Emit("transfer:refreshList")
+}
+
+func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer) {
+	// 创建根目录
+	destPath := filepath.Join(savePath, task.FileName)
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, TransferUploadResponse{
+			ID:      task.ID,
+			Message: "Receiver failed to create folder",
+		})
+		return
+	}
+
+	// 包装 reader，用于计算进度
+	reader := &PassThroughReader{
+		Reader: c.Request.Body,
+		total:  task.FileSize,
+		callback: func(current, total int64, speed float64) {
+			task.Progress = Progress{
+				Current: current,
+				Total:   total,
+				Speed:   speed,
+			}
+			s.transferList.Store(task.ID, *task)
+			s.app.Event.Emit("transfer:refreshList")
+		},
+	}
+
+	tr := tar.NewReader(reader)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, TransferUploadResponse{
+				ID:      task.ID,
+				Message: "Stream error",
+			})
+			slog.Error("Tar stream error", "error", err)
+			return
+		}
+
+		target := filepath.Join(destPath, header.Name)
+		// 确保路径没有越界
+		if !strings.HasPrefix(target, filepath.Clean(destPath)+string(os.PathSeparator)) {
+			// 非法路径
+			continue
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0755); err != nil {
+				slog.Error("Failed to create dir", "path", target, "error", err)
+			}
+		case tar.TypeReg:
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				slog.Error("Failed to create file", "path", target, "error", err)
+				continue
+			}
+
+			if _, err := io.Copy(f, tr); err != nil {
+				f.Close()
+				slog.Error("Failed to write file", "path", target, "error", err)
+				c.JSON(http.StatusInternalServerError, TransferUploadResponse{
+					ID:      task.ID,
+					Message: "Write error",
+				})
+				return
+			}
+			f.Close()
+		}
+	}
+
+	c.JSON(http.StatusOK, TransferUploadResponse{
+		ID:      task.ID,
+		Message: "Folder received successfully",
+	})
+	task.Progress.Total = task.FileSize
+	task.Progress.Current = task.FileSize
+	task.Status = TransferStatusCompleted
+	s.transferList.Store(task.ID, *task)
 	s.app.Event.Emit("transfer:refreshList")
 }
 

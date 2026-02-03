@@ -35,6 +35,10 @@ export function SendFile(target: discovery$0.Peer | null, targetIP: string, file
     return $Call.ByID(2954589433, target, targetIP, filePath);
 }
 
+export function SendFolder(target: discovery$0.Peer | null, targetIP: string, folderPath: string): $CancellablePromise<void> {
+    return $Call.ByID(3258308403, target, targetIP, folderPath);
+}
+
 export function SendText(target: discovery$0.Peer | null, targetIP: string, text: string): $CancellablePromise<void> {
     return $Call.ByID(1497421440, target, targetIP, text);
 }
