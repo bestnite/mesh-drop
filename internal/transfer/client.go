@@ -21,7 +21,7 @@ import (
 
 func (s *Service) SendFiles(target *discovery.Peer, targetIP string, filePaths []string) {
 	for _, filePath := range filePaths {
-		go s.SendFile(target, targetIP, filePath)
+		s.SendFile(target, targetIP, filePath)
 	}
 }
 
@@ -29,13 +29,6 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 	taskID := uuid.New().String()
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancelMap.Store(taskID, cancel)
-
-	// 任务结束后清理 ctx
-	defer func() {
-		s.cancelMap.Delete(taskID)
-		cancel()
-		s.NotifyTransferListUpdate()
-	}()
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -63,24 +56,33 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 
 	s.StoreTransferToList(task)
 
-	askResp, err := s.ask(ctx, target, targetIP, task)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			task.Status = TransferStatusCanceled
-		} else {
-			// 如果请求发送失败，更新状态为 Error
-			task.Status = TransferStatusError
-			task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
+	go func() {
+		// 任务结束后清理 ctx
+		defer func() {
+			s.cancelMap.Delete(taskID)
+			cancel()
+			s.NotifyTransferListUpdate()
+		}()
+
+		askResp, err := s.ask(ctx, target, targetIP, task)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				task.Status = TransferStatusCanceled
+			} else {
+				// 如果请求发送失败，更新状态为 Error
+				task.Status = TransferStatusError
+				task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
+			}
+			return
 		}
-		return
-	}
-	if askResp.Accepted {
-		s.processTransfer(ctx, askResp, target, targetIP, task, file)
-	} else {
-		// 接收方拒绝
-		task.Status = TransferStatusRejected
-		return
-	}
+		if askResp.Accepted {
+			s.processTransfer(ctx, askResp, target, targetIP, task, file)
+		} else {
+			// 接收方拒绝
+			task.Status = TransferStatusRejected
+			return
+		}
+	}()
 }
 
 func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath string) {
@@ -147,13 +149,6 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancelMap.Store(taskID, cancel)
 
-	// 任务结束后清理 ctx
-	defer func() {
-		s.cancelMap.Delete(taskID)
-		cancel()
-		s.NotifyTransferListUpdate()
-	}()
-
 	r := bytes.NewReader([]byte(text))
 	task := NewTransfer(
 		taskID,
@@ -168,24 +163,33 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 
 	s.StoreTransferToList(task)
 
-	askResp, err := s.ask(ctx, target, targetIP, task)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			task.Status = TransferStatusCanceled
-		} else {
-			// 如果请求发送失败，更新状态为 Error
-			task.Status = TransferStatusError
-			task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
+	go func() {
+		// 任务结束后清理 ctx
+		defer func() {
+			s.cancelMap.Delete(taskID)
+			cancel()
+			s.NotifyTransferListUpdate()
+		}()
+
+		askResp, err := s.ask(ctx, target, targetIP, task)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				task.Status = TransferStatusCanceled
+			} else {
+				// 如果请求发送失败，更新状态为 Error
+				task.Status = TransferStatusError
+				task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
+			}
+			return
 		}
-		return
-	}
-	if askResp.Accepted {
-		s.processTransfer(ctx, askResp, target, targetIP, task, r)
-	} else {
-		// 接收方拒绝
-		task.Status = TransferStatusRejected
-		return
-	}
+		if askResp.Accepted {
+			s.processTransfer(ctx, askResp, target, targetIP, task, r)
+		} else {
+			// 接收方拒绝
+			task.Status = TransferStatusRejected
+			return
+		}
+	}()
 }
 
 // ask 向接收端发送传输请求

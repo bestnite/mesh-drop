@@ -34,12 +34,10 @@ func (s *Service) LoadHistory() {
 		return
 	}
 	defer file.Close()
-	var history []Transfer
+	var history []*Transfer
 	err = json.NewDecoder(file).Decode(&history)
 	if err != nil {
 		return
 	}
-	for _, item := range history {
-		s.StoreTransferToList(&item)
-	}
+	s.StoreTransfersToList(history)
 }

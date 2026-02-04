@@ -96,6 +96,13 @@ func (s *Service) CancelTransfer(transferID string) {
 	}
 }
 
+func (s *Service) StoreTransfersToList(transfers []*Transfer) {
+	for _, transfer := range transfers {
+		s.transferList.Store(transfer.ID, transfer)
+	}
+	s.NotifyTransferListUpdate()
+}
+
 func (s *Service) StoreTransferToList(transfer *Transfer) {
 	s.transferList.Store(transfer.ID, transfer)
 	s.NotifyTransferListUpdate()
