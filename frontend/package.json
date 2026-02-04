@@ -12,11 +12,11 @@
     "type-check": "vue-tsc --build --force"
   },
   "dependencies": {
-    "@fontsource/roboto": "5.2.7",
+    "@fontsource-variable/inter": "^5.2.8",
     "@mdi/font": "7.4.47",
+    "@wailsio/runtime": "^3.0.0-alpha.79",
     "vue": "^3.5.21",
-    "vuetify": "^3.10.1",
-    "@wailsio/runtime": "^3.0.0-alpha.79"
+    "vuetify": "^3.10.1"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

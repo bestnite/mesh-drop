@@ -16,6 +16,7 @@ import {
   SetAutoAccept,
   GetSaveHistory,
   SetSaveHistory,
+  GetVersion,
 } from "../../bindings/mesh-drop/internal/config/config";
 import { Dialogs } from "@wailsio/runtime";
 
@@ -43,6 +44,7 @@ onMounted(async () => {
   hostName.value = await GetHostName();
   autoAccept.value = await GetAutoAccept();
   saveHistory.value = await GetSaveHistory();
+  version.value = await GetVersion();
 });
 
 const checkMobile = () => {
@@ -56,12 +58,13 @@ const checkMobile = () => {
 // --- 后端集成 ---
 onMounted(async () => {
   peers.value = await GetPeers();
+  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
 });
 
 // --- 事件监听 ---
-
 Events.On("peers:update", (event) => {
   peers.value = event.data;
+  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
 });
 
 Events.On("transfer:refreshList", async () => {
@@ -117,6 +120,7 @@ const changeSavePath = async () => {
 const hostName = ref("");
 const autoAccept = ref(false);
 const saveHistory = ref(false);
+const version = ref("");
 
 // --- 操作 ---
 
@@ -280,6 +284,14 @@ const handleMenuClick = (key: string) => {
                   @update:modelValue="SetAutoAccept(autoAccept)"
                 ></v-switch
               ></template>
+            </v-list-item>
+            <v-list-item title="Version">
+              <template #prepend>
+                <v-icon icon="mdi-information"></v-icon>
+              </template>
+              <template #append
+                ><div class="text-grey">{{ version }}</div></template
+              >
             </v-list-item>
           </v-list>
         </div>

@@ -25,6 +25,10 @@ export function GetSavePath(): $CancellablePromise<string> {
     return $Call.ByID(4081533263);
 }
 
+export function GetVersion(): $CancellablePromise<string> {
+    return $Call.ByID(3578438023);
+}
+
 /**
  * Save 保存配置到磁盘
  */

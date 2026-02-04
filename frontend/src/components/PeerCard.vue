@@ -225,16 +225,30 @@ const handleSendFiles = () => {
         </v-chip>
 
         <!-- Multiple IP Selector -->
-        <div v-else-if="ips.length > 1" style="width: 150px">
-          <v-select
-            v-model="selectedIp"
-            :items="ips"
-            density="compact"
-            hide-details
-            variant="outlined"
-            single-line
-          ></v-select>
-        </div>
+        <v-menu v-else-if="ips.length > 1">
+          <template #activator="{ props }">
+            <v-chip
+              v-bind="props"
+              size="small"
+              color="info"
+              label
+              link
+              append-icon="mdi-menu-down"
+            >
+              {{ selectedIp }}
+            </v-chip>
+          </template>
+          <v-list density="compact">
+            <v-list-item
+              v-for="ip in ips"
+              :key="ip"
+              :value="ip"
+              @click="selectedIp = ip"
+            >
+              <v-list-item-title>{{ ip }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
 
         <!-- No Route -->
         <v-chip v-else color="warning" size="small" label> No Route </v-chip>

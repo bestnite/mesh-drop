@@ -19,6 +19,8 @@ type WindowState struct {
 	Maximised bool `mapstructure:"maximised"`
 }
 
+const Version = "0.0.1"
+
 type Config struct {
 	v  *viper.Viper
 	mu sync.RWMutex
@@ -175,4 +177,8 @@ func (c *Config) GetSaveHistory() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.SaveHistory
+}
+
+func (c *Config) GetVersion() string {
+	return Version
 }
