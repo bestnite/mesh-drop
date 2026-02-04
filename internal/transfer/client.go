@@ -201,14 +201,14 @@ func (s *Service) ask(ctx context.Context, target *discovery.Peer, targetIP stri
 	// 发送请求
 	askBody, _ := json.Marshal(task)
 
-	askUrl := fmt.Sprintf("http://%s:%d/transfer/ask", targetIP, target.Port)
+	askUrl := fmt.Sprintf("https://%s:%d/transfer/ask", targetIP, target.Port)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, askUrl, bytes.NewReader(askBody))
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return TransferAskResponse{}, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return TransferAskResponse{}, err
 	}
@@ -234,7 +234,7 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 	if err := ctx.Err(); err != nil {
 		return
 	}
-	uploadUrl, _ := url.Parse(fmt.Sprintf("http://%s:%d/transfer/upload/%s", targetIP, target.Port, task.ID))
+	uploadUrl, _ := url.Parse(fmt.Sprintf("https://%s:%d/transfer/upload/%s", targetIP, target.Port, task.ID))
 	query := uploadUrl.Query()
 	query.Add("token", askResp.Token)
 	uploadUrl.RawQuery = query.Encode()
@@ -260,7 +260,7 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 	req.ContentLength = task.FileSize
 	req.Header.Set("Content-Type", "application/octet-stream")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			task.Status = TransferStatusCanceled

@@ -253,7 +253,11 @@ const handleCopy = async () => {
               <v-tooltip activator="parent" location="bottom">Accept</v-tooltip>
             </v-btn>
 
-            <v-btn v-if="canAccept" color="success" @click="acceptToFolder">
+            <v-btn
+              v-if="canAccept && props.transfer.content_type !== 'text'"
+              color="success"
+              @click="acceptToFolder"
+            >
               <v-icon icon="mdi-folder-arrow-right"></v-icon>
               <v-tooltip activator="parent" location="bottom">
                 Save to Folder

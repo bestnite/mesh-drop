@@ -2,10 +2,14 @@ package transfer
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"mesh-drop/internal/config"
 	"mesh-drop/internal/discovery"
+	"mesh-drop/internal/security"
+	"net/http"
+	"path/filepath"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -28,10 +32,21 @@ type Service struct {
 	// cancelMap 存储取消操作的通道
 	// Key: TransferID, Value: context.CancelFunc
 	cancelMap sync.Map
+
+	httpClient *http.Client
 }
 
 func NewService(config *config.Config, app *application.App, notifier *notifications.NotificationService, port int, discoveryService *discovery.Service) *Service {
 	gin.SetMode(gin.ReleaseMode)
+
+	// 配置自定义 HTTP 客户端以跳过自签名证书验证
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	httpClient := &http.Client{
+		Transport: tr,
+		Timeout:   0,
+	}
 
 	return &Service{
 		app:              app,
@@ -39,6 +54,7 @@ func NewService(config *config.Config, app *application.App, notifier *notificat
 		port:             port,
 		discoveryService: discoveryService,
 		config:           config,
+		httpClient:       httpClient,
 	}
 }
 
@@ -59,9 +75,19 @@ func (s *Service) Start() {
 	}
 
 	go func() {
+		configDir := config.GetConfigDir()
+		certPath := filepath.Join(configDir, "server.crt")
+		keyPath := filepath.Join(configDir, "server.key")
+
+		if err := security.EnsureCertificates(certPath, keyPath); err != nil {
+			slog.Error("Failed to generate certificates", "error", err, "component", "transfer")
+			return
+		}
+
 		addr := fmt.Sprintf(":%d", s.port)
-		slog.Info("Transfer service listening", "address", addr, "component", "transfer")
-		if err := r.Run(addr); err != nil {
+		slog.Info("Transfer service listening (HTTPS)", "address", addr, "component", "transfer")
+
+		if err := r.RunTLS(addr, certPath, keyPath); err != nil {
 			slog.Error("Transfer service error", "error", err, "component", "transfer")
 		}
 	}()
