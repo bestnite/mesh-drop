@@ -7,11 +7,22 @@ import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
 import { GetPeers } from "../../bindings/mesh-drop/internal/discovery/service";
 import { Events } from "@wailsio/runtime";
 import { GetTransferList } from "../../bindings/mesh-drop/internal/transfer/service";
+import {
+  GetSavePath,
+  SetSavePath,
+  GetHostName,
+  SetHostName,
+  GetAutoAccept,
+  SetAutoAccept,
+  GetSaveHistory,
+  SetSaveHistory,
+} from "../../bindings/mesh-drop/internal/config/config";
+import { Dialogs } from "@wailsio/runtime";
 
 const peers = ref<Peer[]>([]);
 const transferList = ref<Transfer[]>([]);
 const activeKey = ref("discover");
-const drawer = ref(true); // Control drawer visibility
+const drawer = ref(true);
 const isMobile = ref(false);
 
 // 监听窗口大小变化更新 isMobile
@@ -26,6 +37,12 @@ onMounted(async () => {
   if (isMobile.value) {
     drawer.value = false;
   }
+
+  // 加载配置
+  savePath.value = await GetSavePath();
+  hostName.value = await GetHostName();
+  autoAccept.value = await GetAutoAccept();
+  saveHistory.value = await GetSaveHistory();
 });
 
 const checkMobile = () => {
@@ -73,7 +90,33 @@ const menuItems = computed(() => [
     icon: "mdi-inbox",
     badge: pendingCount.value > 0 ? pendingCount.value : null,
   },
+  {
+    title: "Settings",
+    value: "settings",
+    icon: "mdi-cog",
+  },
 ]);
+
+// --- 设置 ---
+const savePath = ref("");
+
+const changeSavePath = async () => {
+  const opts: Dialogs.OpenFileDialogOptions = {
+    Title: "Select Save Path",
+    CanChooseDirectories: true,
+    CanChooseFiles: false,
+    AllowsMultipleSelection: false,
+  };
+  const path = await Dialogs.OpenFile(opts);
+  if (path && typeof path === "string") {
+    await SetSavePath(path);
+    savePath.value = path;
+  }
+};
+
+const hostName = ref("");
+const autoAccept = ref(false);
+const saveHistory = ref(false);
 
 // --- 操作 ---
 
@@ -87,17 +130,17 @@ const handleMenuClick = (key: string) => {
 
 <template>
   <v-layout>
-    <!-- App Bar for Mobile -->
+    <!-- 小屏幕抽屉 -->
     <v-app-bar v-if="isMobile" border flat>
       <v-toolbar-title class="text-primary font-weight-bold"
         >Mesh Drop</v-toolbar-title
       >
-      <template v-slot:append>
+      <template #append>
         <v-btn icon="mdi-menu" @click="drawer = !drawer"></v-btn>
       </template>
     </v-app-bar>
 
-    <!-- Navigation Drawer -->
+    <!-- 导航抽屉 -->
     <v-navigation-drawer v-model="drawer" :permanent="!isMobile">
       <div class="pa-4" v-if="!isMobile">
         <div class="text-h6 text-primary font-weight-bold">Mesh Drop</div>
@@ -113,7 +156,7 @@ const handleMenuClick = (key: string) => {
           rounded="xl"
           color="primary"
         >
-          <template v-slot:prepend>
+          <template #prepend>
             <v-icon :icon="item.icon"></v-icon>
           </template>
 
@@ -131,10 +174,10 @@ const handleMenuClick = (key: string) => {
       </v-list>
     </v-navigation-drawer>
 
-    <!-- Main Content -->
+    <!-- 主内容 -->
     <v-main>
       <v-container fluid class="pa-4">
-        <!-- Discover View -->
+        <!-- 发现视图 -->
         <div v-show="activeKey === 'discover'">
           <div v-if="peers.length > 0" class="peer-grid">
             <div v-for="peer in peers" :key="peer.id">
@@ -160,7 +203,7 @@ const handleMenuClick = (key: string) => {
           </div>
         </div>
 
-        <!-- Transfers View -->
+        <!-- 传输视图 -->
         <div v-show="activeKey === 'transfers'">
           <div v-if="transferList.length > 0">
             <TransferItem
@@ -176,6 +219,69 @@ const handleMenuClick = (key: string) => {
             <v-icon icon="mdi-inbox" size="100" class="mb-4 text-grey"></v-icon>
             <div class="text-grey">No transfers yet</div>
           </div>
+        </div>
+
+        <!-- 设置视图 -->
+        <div v-show="activeKey === 'settings'">
+          <v-list lines="one" bg-color="transparent">
+            <v-list-item title="Save Path" :subtitle="savePath">
+              <template #prepend>
+                <v-icon icon="mdi-folder-download"></v-icon>
+              </template>
+              <template #append>
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  @click="changeSavePath"
+                  prepend-icon="mdi-pencil"
+                >
+                  Change
+                </v-btn>
+              </template>
+            </v-list-item>
+            <v-list-item title="HostName">
+              <template #prepend>
+                <v-icon icon="mdi-laptop"></v-icon>
+              </template>
+              <template #append
+                ><v-text-field
+                  clearable
+                  variant="underlined"
+                  v-model="hostName"
+                  width="200"
+                  @update:modelValue="SetHostName"
+                ></v-text-field
+              ></template>
+            </v-list-item>
+            <v-list-item title="Save History">
+              <template #prepend>
+                <v-icon icon="mdi-history"></v-icon>
+              </template>
+              <template #append
+                ><v-switch
+                  v-model="saveHistory"
+                  color="primary"
+                  inset
+                  hide-details
+                  @update:modelValue="SetSaveHistory(saveHistory)"
+                ></v-switch
+              ></template>
+            </v-list-item>
+            <v-list-item title="Auto Accept">
+              <template #prepend>
+                <v-icon icon="mdi-content-save"></v-icon>
+              </template>
+              <template #append
+                ><v-switch
+                  v-model="autoAccept"
+                  color="primary"
+                  inset
+                  hide-details
+                  @update:modelValue="SetAutoAccept(autoAccept)"
+                ></v-switch
+              ></template>
+            </v-list-item>
+          </v-list>
         </div>
       </v-container>
     </v-main>

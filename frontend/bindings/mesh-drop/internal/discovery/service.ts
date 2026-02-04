@@ -13,10 +13,6 @@ export function GetID(): $CancellablePromise<string> {
     return $Call.ByID(1539451205);
 }
 
-export function GetName(): $CancellablePromise<string> {
-    return $Call.ByID(1578367131);
-}
-
 export function GetPeerByIP(ip: string): $CancellablePromise<$models.Peer | null> {
     return $Call.ByID(1626825408, ip).then(($result: any) => {
         return $$createType1($result);

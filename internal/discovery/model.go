@@ -19,9 +19,6 @@ type Peer struct {
 	// Port 是文件传输服务的监听端口。
 	Port int `json:"port"`
 
-	// IsOnline 标记该端点当前是否活跃 (UI 渲染用)。
-	IsOnline bool `json:"is_online"`
-
 	OS OS `json:"os"`
 }
 

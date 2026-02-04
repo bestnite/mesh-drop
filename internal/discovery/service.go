@@ -4,14 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"mesh-drop/internal/config"
 	"net"
-	"os"
-	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -25,7 +23,7 @@ type Service struct {
 	app *application.App
 
 	ID             string
-	Name           string
+	config         *config.Config
 	FileServerPort int
 
 	// key 使用 peer.id 和 peer.ip 组合而成的 hash
@@ -37,33 +35,11 @@ func init() {
 	application.RegisterEvent[[]Peer]("peers:update")
 }
 
-// getOrInitDeviceID 获取或初始化设备 ID
-func getOrInitDeviceID() string {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return uuid.New().String()
-	}
-
-	appDir := filepath.Join(configDir, "mesh-drop")
-	if err := os.MkdirAll(appDir, 0755); err != nil {
-		return uuid.New().String()
-	}
-
-	idFile := filepath.Join(appDir, "device_id")
-	if data, err := os.ReadFile(idFile); err == nil {
-		return string(data)
-	}
-
-	id := uuid.New().String()
-	_ = os.WriteFile(idFile, []byte(id), 0644)
-	return id
-}
-
-func NewService(app *application.App, name string, port int) *Service {
+func NewService(config *config.Config, app *application.App, port int) *Service {
 	return &Service{
 		app:            app,
-		ID:             getOrInitDeviceID(),
-		Name:           name,
+		ID:             config.GetID(),
+		config:         config,
 		FileServerPort: port,
 		peers:          make(map[string]*Peer),
 	}
@@ -79,7 +55,7 @@ func (s *Service) startBroadcasting() {
 		}
 		packet := PresencePacket{
 			ID:   s.ID,
-			Name: s.Name,
+			Name: s.config.GetHostName(),
 			Port: s.FileServerPort,
 			OS:   OS(runtime.GOOS),
 		}
@@ -163,7 +139,7 @@ func (s *Service) startListening() {
 	}
 }
 
-// 处理心跳包
+// handleHeartbeat 处理心跳包
 func (s *Service) handleHeartbeat(pkt PresencePacket, ip string) {
 	s.peersMutex.Lock()
 
@@ -186,13 +162,14 @@ func (s *Service) handleHeartbeat(pkt PresencePacket, ip string) {
 		slog.Info("New device found", "name", pkt.Name, "ip", ip, "component", "discovery")
 	} else {
 		// 更新节点
+		peer.Name = pkt.Name
+		peer.OS = pkt.OS
 		peer.Routes[ip] = &RouteState{
 			IP:       ip,
 			LastSeen: time.Now(),
 		}
 	}
 
-	peer.IsOnline = true
 	s.peersMutex.Unlock()
 
 	// 触发前端更新 (防抖逻辑可以之后加，这里每次变动都推)
@@ -258,10 +235,6 @@ func (s *Service) GetPeers() []Peer {
 		list = append(list, *p)
 	}
 	return list
-}
-
-func (s *Service) GetName() string {
-	return s.Name
 }
 
 func (s *Service) GetID() string {

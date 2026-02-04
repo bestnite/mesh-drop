@@ -5,6 +5,22 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
+export function GetAutoAccept(): $CancellablePromise<boolean> {
+    return $Call.ByID(2605668438);
+}
+
+export function GetHostName(): $CancellablePromise<string> {
+    return $Call.ByID(972342140);
+}
+
+export function GetID(): $CancellablePromise<string> {
+    return $Call.ByID(4240411568);
+}
+
+export function GetSaveHistory(): $CancellablePromise<boolean> {
+    return $Call.ByID(2178923392);
+}
+
 export function GetSavePath(): $CancellablePromise<string> {
     return $Call.ByID(4081533263);
 }
@@ -14,6 +30,18 @@ export function GetSavePath(): $CancellablePromise<string> {
  */
 export function Save(): $CancellablePromise<void> {
     return $Call.ByID(3089450934);
+}
+
+export function SetAutoAccept(autoAccept: boolean): $CancellablePromise<void> {
+    return $Call.ByID(3371961138, autoAccept);
+}
+
+export function SetHostName(hostName: string): $CancellablePromise<void> {
+    return $Call.ByID(1580131496, hostName);
+}
+
+export function SetSaveHistory(saveHistory: boolean): $CancellablePromise<void> {
+    return $Call.ByID(3779587628, saveHistory);
 }
 
 /**

@@ -38,15 +38,18 @@ func main() {
 
 	// 文件传输端口
 	port := 9989
-	name, _ := os.Hostname()
 
 	// 初始化发现服务
-	discoveryService := discovery.NewService(app, name, port)
+	discoveryService := discovery.NewService(conf, app, port)
 	discoveryService.Start()
 
 	// 初始化传输服务
 	transferService := transfer.NewService(conf, app, port, discoveryService)
 	transferService.Start()
+	// 加载传输历史
+	if conf.GetSaveHistory() {
+		transferService.LoadHistory()
+	}
 
 	slog.Info("Backend Service Started", "discovery_port", discovery.DiscoveryPort, "transfer_port", port)
 
@@ -66,6 +69,7 @@ func main() {
 		},
 	})
 
+	// 窗口文件拖拽事件
 	window.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
 		files := event.Context().DroppedFiles()
 		details := event.Context().DropTargetDetails()
@@ -75,7 +79,9 @@ func main() {
 		})
 	})
 
+	// 窗口关闭事件
 	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		// 保存配置
 		x, y := window.Position()
 		width, height := window.Size()
 		conf.WindowState = config.WindowState{
@@ -85,6 +91,10 @@ func main() {
 			Height: height,
 		}
 		_ = conf.Save()
+		// 保存传输历史
+		if conf.GetSaveHistory() {
+			transferService.SaveHistory()
+		}
 	})
 
 	application.RegisterEvent[FilesDroppedEvent]("files-dropped")

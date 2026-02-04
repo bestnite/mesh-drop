@@ -53,7 +53,7 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 		taskID,
 		Sender{
 			ID:   s.discoveryService.GetID(),
-			Name: s.discoveryService.GetName(),
+			Name: s.config.GetHostName(),
 		},
 		WithFileName(filepath.Base(filePath)),
 		WithFileSize(stat.Size()),
@@ -105,7 +105,7 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 		taskID,
 		Sender{
 			ID:   s.discoveryService.GetID(),
-			Name: s.discoveryService.GetName(),
+			Name: s.config.GetHostName(),
 		},
 		WithFileName(filepath.Base(folderPath)),
 		WithFileSize(size),
@@ -159,7 +159,7 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 		taskID,
 		Sender{
 			ID:   s.discoveryService.GetID(),
-			Name: s.discoveryService.GetName(),
+			Name: s.config.GetHostName(),
 		},
 		WithFileSize(int64(len(text))),
 		WithType(TransferTypeSend),

@@ -45,6 +45,10 @@ export function GetTransferList(): $CancellablePromise<($models.Transfer | null)
     });
 }
 
+export function LoadHistory(): $CancellablePromise<void> {
+    return $Call.ByID(2987999795);
+}
+
 export function NotifyTransferListUpdate(): $CancellablePromise<void> {
     return $Call.ByID(1220032142);
 }
@@ -55,6 +59,10 @@ export function NotifyTransferListUpdate(): $CancellablePromise<void> {
  */
 export function ResolvePendingRequest(id: string, accept: boolean, savePath: string): $CancellablePromise<boolean> {
     return $Call.ByID(207902967, id, accept, savePath);
+}
+
+export function SaveHistory(): $CancellablePromise<void> {
+    return $Call.ByID(713135400);
 }
 
 export function SendFile(target: discovery$0.Peer | null, targetIP: string, filePath: string): $CancellablePromise<void> {

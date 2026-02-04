@@ -208,14 +208,14 @@ const handleSendFiles = () => {
 
 <template>
   <v-card hover link class="peer-card pa-2">
-    <template v-slot:title>
+    <template #title>
       <div class="d-flex align-center">
         <v-icon :icon="osIcon" size="24" class="mr-2"></v-icon>
         <span class="text-subtitle-1 font-weight-bold">{{ peer.name }}</span>
       </div>
     </template>
 
-    <template v-slot:text>
+    <template #text>
       <div class="d-flex align-center flex-wrap ga-2 mt-2">
         <v-icon icon="mdi-web" size="20" class="text-medium-emphasis"></v-icon>
 
@@ -241,9 +241,9 @@ const handleSendFiles = () => {
       </div>
     </template>
 
-    <template v-slot:actions>
+    <template #actions>
       <v-menu>
-        <template v-slot:activator="{ props }">
+        <template #activator="{ props }">
           <v-btn
             v-bind="props"
             block
@@ -252,10 +252,10 @@ const handleSendFiles = () => {
             :disabled="ips.length === 0"
             append-icon="mdi-chevron-down"
           >
-            <template v-slot:prepend>
+            <template #prepend>
               <v-icon icon="mdi-send"></v-icon>
             </template>
-            Send...
+            Send
           </v-btn>
         </template>
         <v-list>
@@ -265,7 +265,7 @@ const handleSendFiles = () => {
             :value="item.value"
             @click="handleAction(item.value)"
           >
-            <template v-slot:prepend>
+            <template #prepend>
               <v-icon :icon="item.icon"></v-icon>
             </template>
             <v-list-item-title>{{ item.title }}</v-list-item-title>
@@ -312,7 +312,7 @@ const handleSendFiles = () => {
               :subtitle="file.path"
               lines="two"
             >
-              <template v-slot:append>
+              <template #append>
                 <v-btn
                   icon="mdi-delete"
                   size="small"

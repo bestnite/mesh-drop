@@ -8,9 +8,4 @@ import MainLayout from "./components/MainLayout.vue";
   </v-app>
 </template>
 
-<style>
-body,
-#app {
-  font-family: "Noto Sans", "Roboto", "Segoe UI", sans-serif !important;
-}
-</style>
+<style></style>

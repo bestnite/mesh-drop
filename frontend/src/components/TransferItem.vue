@@ -261,29 +261,16 @@ const canAccept = computed(() => {
             <v-btn
               v-if="canAccept"
               color="success"
-              icon="mdi-check"
+              icon="mdi-content-save"
               @click="acceptTransfer"
             ></v-btn>
 
-            <v-menu v-if="canAccept && props.transfer.content_type !== 'text'">
-              <template v-slot:activator="{ props }">
-                <v-btn
-                  color="success"
-                  icon="mdi-chevron-down"
-                  v-bind="props"
-                ></v-btn>
-              </template>
-              <v-list>
-                <v-list-item
-                  v-for="(item, index) in dropdownItems"
-                  :key="index"
-                  :value="item.value"
-                  @click="handleSelect(item.value)"
-                >
-                  <v-list-item-title>{{ item.title }}</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
+            <v-btn
+              v-if="canAccept"
+              color="success"
+              icon="mdi-folder-arrow-right"
+              @click="acceptToFolder"
+            ></v-btn>
 
             <v-btn
               v-if="canAccept"

@@ -42,7 +42,13 @@ func (s *Service) handleAsk(c *gin.Context) {
 	task.DecisionChan = make(chan Decision)
 	s.StoreTransferToList(&task)
 
-	// 通知 Wails 前端
+	if s.config.GetAutoAccept() {
+		task.DecisionChan <- Decision{
+			ID:       task.ID,
+			Accepted: true,
+			SavePath: s.config.GetSavePath(),
+		}
+	}
 
 	// 等待用户决策或发送端放弃
 	select {
@@ -53,15 +59,14 @@ func (s *Service) handleAsk(c *gin.Context) {
 			task.SavePath = decision.SavePath
 			token := uuid.New().String()
 			task.Token = token
+			c.JSON(http.StatusOK, TransferAskResponse{
+				ID:       task.ID,
+				Accepted: decision.Accepted,
+				Token:    task.Token,
+			})
 		} else {
 			task.Status = TransferStatusRejected
 		}
-		c.JSON(http.StatusOK, TransferAskResponse{
-			ID:       task.ID,
-			Accepted: decision.Accepted,
-			Token:    task.Token,
-		})
-
 	case <-c.Request.Context().Done():
 		// 发送端放弃
 		task.Status = TransferStatusCanceled

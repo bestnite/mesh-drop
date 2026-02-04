@@ -46,11 +46,6 @@ export class Peer {
      * Port 是文件传输服务的监听端口。
      */
     "port": number;
-
-    /**
-     * IsOnline 标记该端点当前是否活跃 (UI 渲染用)。
-     */
-    "is_online": boolean;
     "os": OS;
 
     /** Creates a new Peer instance. */
@@ -66,9 +61,6 @@ export class Peer {
         }
         if (!("port" in $$source)) {
             this["port"] = 0;
-        }
-        if (!("is_online" in $$source)) {
-            this["is_online"] = false;
         }
         if (!("os" in $$source)) {
             this["os"] = OS.$zero;
