@@ -5,3 +5,7 @@ import * as Config from "./config.js";
 export {
     Config
 };
+
+export {
+    WindowState
+} from "./models.js";

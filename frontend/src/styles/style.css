@@ -1,0 +1,18 @@
+html,
+body,
+#app {
+    -webkit-user-select: none;
+    /* Chrome/Safari/Wails 必须 */
+    user-select: none;
+    /* 标准属性 */
+    cursor: default;
+    /* 鼠标指针变为默认箭头，而不是文本输入的 I 形 */
+}
+
+input,
+textarea,
+[contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+    cursor: text;
+}

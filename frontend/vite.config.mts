@@ -2,7 +2,7 @@
 import Components from "unplugin-vue-components/vite";
 import Vue from "@vitejs/plugin-vue";
 import Vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
-import Fonts from "unplugin-fonts/vite";
+
 import wails from "@wailsio/runtime/plugins/vite";
 
 // Utilities
@@ -15,9 +15,14 @@ export default defineConfig({
     Vue({
       template: { transformAssetUrls },
     }),
+
     wails("./bindings"),
     // https://github.com/vuetifyjs/vuetify-loader/tree/master/packages/vite-plugin#readme
-    Vuetify(),
+    Vuetify({
+      styles: {
+        configFile: "src/styles/settings.scss",
+      },
+    }),
     Components(),
   ],
   optimizeDeps: {

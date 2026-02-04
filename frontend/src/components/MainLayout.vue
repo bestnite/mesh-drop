@@ -1,78 +1,27 @@
 <script lang="ts" setup>
+// --- Vue 核心 ---
 import { onMounted, ref, computed } from "vue";
+
+// --- 组件 ---
 import PeerCard from "./PeerCard.vue";
 import TransferItem from "./TransferItem.vue";
+import SettingsView from "./SettingsView.vue";
+
+// --- 类型 & 模型 ---
 import { Peer } from "../../bindings/mesh-drop/internal/discovery/models";
 import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
-import { GetPeers } from "../../bindings/mesh-drop/internal/discovery/service";
-import { Events } from "@wailsio/runtime";
-import { GetTransferList } from "../../bindings/mesh-drop/internal/transfer/service";
-import {
-  GetSavePath,
-  SetSavePath,
-  GetHostName,
-  SetHostName,
-  GetAutoAccept,
-  SetAutoAccept,
-  GetSaveHistory,
-  SetSaveHistory,
-  GetVersion,
-} from "../../bindings/mesh-drop/internal/config/config";
-import { Dialogs } from "@wailsio/runtime";
 
+// --- Service & 后端绑定 ---
+import { Events } from "@wailsio/runtime";
+import { GetPeers } from "../../bindings/mesh-drop/internal/discovery/service";
+import { GetTransferList } from "../../bindings/mesh-drop/internal/transfer/service";
+
+// --- 状态 ---
 const peers = ref<Peer[]>([]);
 const transferList = ref<Transfer[]>([]);
 const activeKey = ref("discover");
 const drawer = ref(true);
 const isMobile = ref(false);
-
-// 监听窗口大小变化更新 isMobile
-onMounted(async () => {
-  checkMobile();
-  window.addEventListener("resize", checkMobile);
-  const list = await GetTransferList();
-  transferList.value = (
-    (list || []).filter((t) => t !== null) as Transfer[]
-  ).sort((a, b) => b.create_time - a.create_time);
-
-  if (isMobile.value) {
-    drawer.value = false;
-  }
-
-  // 加载配置
-  savePath.value = await GetSavePath();
-  hostName.value = await GetHostName();
-  autoAccept.value = await GetAutoAccept();
-  saveHistory.value = await GetSaveHistory();
-  version.value = await GetVersion();
-});
-
-const checkMobile = () => {
-  const mobile = window.innerWidth < 768;
-  if (mobile !== isMobile.value) {
-    isMobile.value = mobile;
-    drawer.value = !mobile;
-  }
-};
-
-// --- 后端集成 ---
-onMounted(async () => {
-  peers.value = await GetPeers();
-  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
-});
-
-// --- 事件监听 ---
-Events.On("peers:update", (event) => {
-  peers.value = event.data;
-  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
-});
-
-Events.On("transfer:refreshList", async () => {
-  const list = await GetTransferList();
-  transferList.value = (
-    (list || []).filter((t) => t !== null) as Transfer[]
-  ).sort((a, b) => b.create_time - a.create_time);
-});
 
 // --- 计算属性 ---
 const pendingCount = computed(() => {
@@ -100,29 +49,46 @@ const menuItems = computed(() => [
   },
 ]);
 
-// --- 设置 ---
-const savePath = ref("");
+// --- 生命周期 ---
+onMounted(async () => {
+  checkMobile();
+  window.addEventListener("resize", checkMobile);
+  const list = await GetTransferList();
+  transferList.value = (
+    (list || []).filter((t) => t !== null) as Transfer[]
+  ).sort((a, b) => b.create_time - a.create_time);
 
-const changeSavePath = async () => {
-  const opts: Dialogs.OpenFileDialogOptions = {
-    Title: "Select Save Path",
-    CanChooseDirectories: true,
-    CanChooseFiles: false,
-    AllowsMultipleSelection: false,
-  };
-  const path = await Dialogs.OpenFile(opts);
-  if (path && typeof path === "string") {
-    await SetSavePath(path);
-    savePath.value = path;
+  if (isMobile.value) {
+    drawer.value = false;
+  }
+});
+
+// --- 后端集成 & 事件监听 ---
+onMounted(async () => {
+  peers.value = await GetPeers();
+  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
+});
+
+Events.On("peers:update", (event) => {
+  peers.value = event.data;
+  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
+});
+
+Events.On("transfer:refreshList", async () => {
+  const list = await GetTransferList();
+  transferList.value = (
+    (list || []).filter((t) => t !== null) as Transfer[]
+  ).sort((a, b) => b.create_time - a.create_time);
+});
+
+// --- 方法 ---
+const checkMobile = () => {
+  const mobile = window.innerWidth < 768;
+  if (mobile !== isMobile.value) {
+    isMobile.value = mobile;
+    drawer.value = !mobile;
   }
 };
-
-const hostName = ref("");
-const autoAccept = ref(false);
-const saveHistory = ref(false);
-const version = ref("");
-
-// --- 操作 ---
 
 const handleMenuClick = (key: string) => {
   activeKey.value = key;
@@ -146,7 +112,7 @@ const handleMenuClick = (key: string) => {
 
     <!-- 导航抽屉 -->
     <v-navigation-drawer v-model="drawer" :permanent="!isMobile">
-      <div class="pa-4" v-if="!isMobile">
+      <div class="pa-4 d-flex align-center justify-center" v-if="!isMobile">
         <div class="text-h6 text-primary font-weight-bold">Mesh Drop</div>
       </div>
 
@@ -164,7 +130,7 @@ const handleMenuClick = (key: string) => {
             <v-icon :icon="item.icon"></v-icon>
           </template>
 
-          <v-list-item-title>
+          <v-list-item-title class="text-body-2">
             {{ item.title }}
             <v-badge
               v-if="item.badge"
@@ -227,73 +193,7 @@ const handleMenuClick = (key: string) => {
 
         <!-- 设置视图 -->
         <div v-show="activeKey === 'settings'">
-          <v-list lines="one" bg-color="transparent">
-            <v-list-item title="Save Path" :subtitle="savePath">
-              <template #prepend>
-                <v-icon icon="mdi-folder-download"></v-icon>
-              </template>
-              <template #append>
-                <v-btn
-                  variant="text"
-                  color="primary"
-                  @click="changeSavePath"
-                  prepend-icon="mdi-pencil"
-                >
-                  Change
-                </v-btn>
-              </template>
-            </v-list-item>
-            <v-list-item title="HostName">
-              <template #prepend>
-                <v-icon icon="mdi-laptop"></v-icon>
-              </template>
-              <template #append
-                ><v-text-field
-                  clearable
-                  variant="underlined"
-                  v-model="hostName"
-                  width="200"
-                  @update:modelValue="SetHostName"
-                ></v-text-field
-              ></template>
-            </v-list-item>
-            <v-list-item title="Save History">
-              <template #prepend>
-                <v-icon icon="mdi-history"></v-icon>
-              </template>
-              <template #append
-                ><v-switch
-                  v-model="saveHistory"
-                  color="primary"
-                  inset
-                  hide-details
-                  @update:modelValue="SetSaveHistory(saveHistory)"
-                ></v-switch
-              ></template>
-            </v-list-item>
-            <v-list-item title="Auto Accept">
-              <template #prepend>
-                <v-icon icon="mdi-content-save"></v-icon>
-              </template>
-              <template #append
-                ><v-switch
-                  v-model="autoAccept"
-                  color="primary"
-                  inset
-                  hide-details
-                  @update:modelValue="SetAutoAccept(autoAccept)"
-                ></v-switch
-              ></template>
-            </v-list-item>
-            <v-list-item title="Version">
-              <template #prepend>
-                <v-icon icon="mdi-information"></v-icon>
-              </template>
-              <template #append
-                ><div class="text-grey">{{ version }}</div></template
-              >
-            </v-list-item>
-          </v-list>
+          <SettingsView />
         </div>
       </v-container>
     </v-main>

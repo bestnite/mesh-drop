@@ -11,8 +11,11 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    FileSendModal: typeof import('./src/components/modals/FileSendModal.vue')['default']
     MainLayout: typeof import('./src/components/MainLayout.vue')['default']
     PeerCard: typeof import('./src/components/PeerCard.vue')['default']
+    SettingsView: typeof import('./src/components/SettingsView.vue')['default']
+    TextSendModal: typeof import('./src/components/modals/TextSendModal.vue')['default']
     TransferItem: typeof import('./src/components/TransferItem.vue')['default']
   }
 }

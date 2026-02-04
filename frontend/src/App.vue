@@ -8,8 +8,4 @@ import MainLayout from "./components/MainLayout.vue";
   </v-app>
 </template>
 
-<style>
-:root {
-  font-family: "Inter Variable", sans-serif;
-}
-</style>
+<style></style>

@@ -5,6 +5,10 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 export function GetAutoAccept(): $CancellablePromise<boolean> {
     return $Call.ByID(2605668438);
 }
@@ -27,6 +31,12 @@ export function GetSavePath(): $CancellablePromise<string> {
 
 export function GetVersion(): $CancellablePromise<string> {
     return $Call.ByID(3578438023);
+}
+
+export function GetWindowState(): $CancellablePromise<$models.WindowState> {
+    return $Call.ByID(341414414).then(($result: any) => {
+        return $$createType0($result);
+    });
 }
 
 /**
@@ -54,3 +64,10 @@ export function SetSaveHistory(saveHistory: boolean): $CancellablePromise<void> 
 export function SetSavePath(savePath: string): $CancellablePromise<void> {
     return $Call.ByID(3805718491, savePath);
 }
+
+export function SetWindowState(state: $models.WindowState): $CancellablePromise<void> {
+    return $Call.ByID(4007191514, state);
+}
+
+// Private type creation functions
+const $$createType0 = $models.WindowState.createFrom;

@@ -1,35 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, h } from "vue";
+// --- Vue 核心 ---
+import { computed, ref } from "vue";
+
+// --- Wails & 后端绑定 ---
+import { Dialogs, Clipboard } from "@wailsio/runtime";
 import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
 import {
   ResolvePendingRequest,
   CancelTransfer,
   DeleteTransfer,
 } from "../../bindings/mesh-drop/internal/transfer/service";
-import { Dialogs, Clipboard } from "@wailsio/runtime";
 
+// --- 属性 & 事件 ---
 const props = defineProps<{
   transfer: Transfer;
 }>();
 
-const formatSize = (bytes?: number) => {
-  if (bytes === undefined) return "";
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
+// --- 状态 ---
+const showContentDialog = ref(false);
 
-const formatSpeed = (speed?: number) => {
-  if (!speed) return "";
-  return formatSize(speed) + "/s";
-};
-
-const formatTime = (time: number): string => {
-  return new Date(time).toLocaleString();
-};
-
+// --- 计算属性 ---
 const percentage = computed(() =>
   Math.min(
     100,
@@ -38,62 +28,12 @@ const percentage = computed(() =>
     ),
   ),
 );
+
 const progressColor = computed(() => {
   if (props.transfer.status === "error") return "error";
   if (props.transfer.status === "completed") return "success";
   return "primary";
 });
-
-const acceptTransfer = () => {
-  ResolvePendingRequest(props.transfer.id, true, "");
-};
-
-const rejectTransfer = () => {
-  ResolvePendingRequest(props.transfer.id, false, "");
-};
-
-const acceptToFolder = async () => {
-  const opts: Dialogs.OpenFileDialogOptions = {
-    Title: "Select Folder to save the file",
-    CanChooseDirectories: true,
-    CanChooseFiles: false,
-    AllowsMultipleSelection: false,
-  };
-  const path = await Dialogs.OpenFile(opts);
-  if (path !== "") {
-    ResolvePendingRequest(props.transfer.id, true, path as string);
-  }
-};
-
-const dropdownItems = [
-  {
-    title: "Accept To Folder",
-    value: "folder",
-  },
-];
-
-const handleSelect = (key: string | number) => {
-  if (key === "folder") {
-    acceptToFolder();
-  }
-};
-
-const handleDelete = () => {
-  DeleteTransfer(props.transfer.id);
-};
-
-const handleCopy = async () => {
-  Clipboard.SetText(props.transfer.text)
-    // .then(() => {
-    //   message.success("Copied to clipboard");
-    // })
-    .catch(() => {
-      // message.error("Failed to copy to clipboard");
-      console.error("Failed to copy");
-    });
-};
-
-const showContentDialog = ref(false);
 
 const canCancel = computed(() => {
   if (
@@ -136,10 +76,60 @@ const canAccept = computed(() => {
   }
   return false;
 });
+
+// --- 方法 ---
+const formatSize = (bytes?: number) => {
+  if (bytes === undefined) return "";
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+const formatSpeed = (speed?: number) => {
+  if (!speed) return "";
+  return formatSize(speed) + "/s";
+};
+
+const formatTime = (time: number): string => {
+  return new Date(time).toLocaleString();
+};
+
+const acceptTransfer = () => {
+  ResolvePendingRequest(props.transfer.id, true, "");
+};
+
+const rejectTransfer = () => {
+  ResolvePendingRequest(props.transfer.id, false, "");
+};
+
+const acceptToFolder = async () => {
+  const opts: Dialogs.OpenFileDialogOptions = {
+    Title: "Select Folder to save the file",
+    CanChooseDirectories: true,
+    CanChooseFiles: false,
+    AllowsMultipleSelection: false,
+  };
+  const path = await Dialogs.OpenFile(opts);
+  if (path !== "") {
+    ResolvePendingRequest(props.transfer.id, true, path as string);
+  }
+};
+
+const handleDelete = () => {
+  DeleteTransfer(props.transfer.id);
+};
+
+const handleCopy = async () => {
+  Clipboard.SetText(props.transfer.text).catch(() => {
+    console.error("Failed to copy");
+  });
+};
 </script>
 
 <template>
-  <v-card class="transfer-item mb-2" variant="outlined">
+  <v-card class="transfer-item mb-2">
     <v-card-text class="py-2 px-3">
       <div class="d-flex align-center flex-wrap ga-2">
         <!-- 图标 -->
@@ -257,54 +247,38 @@ const canAccept = computed(() => {
 
         <!-- 操作按钮 -->
         <div class="actions-wrapper">
-          <v-btn-group density="compact" variant="outlined" divided>
-            <v-btn
-              v-if="canAccept"
-              color="success"
-              icon="mdi-content-save"
-              @click="acceptTransfer"
-            >
-              <v-tooltip activator="parent" location="top">Accept</v-tooltip>
+          <v-btn-group density="compact" variant="tonal" divided rounded="xl">
+            <v-btn v-if="canAccept" color="success" @click="acceptTransfer">
+              <v-icon icon="mdi-content-save"></v-icon>
+              <v-tooltip activator="parent" location="bottom">Accept</v-tooltip>
             </v-btn>
 
-            <v-btn
-              v-if="canAccept"
-              color="success"
-              icon="mdi-folder-arrow-right"
-              @click="acceptToFolder"
-            >
-              <v-tooltip activator="parent" location="top">
+            <v-btn v-if="canAccept" color="success" @click="acceptToFolder">
+              <v-icon icon="mdi-folder-arrow-right"></v-icon>
+              <v-tooltip activator="parent" location="bottom">
                 Save to Folder
               </v-tooltip>
             </v-btn>
 
-            <v-btn
-              v-if="canAccept"
-              color="error"
-              icon="mdi-close"
-              @click="rejectTransfer"
-            >
-              <v-tooltip activator="parent" location="top">Reject</v-tooltip>
+            <v-btn v-if="canAccept" color="error" @click="rejectTransfer">
+              <v-icon icon="mdi-close"></v-icon>
+              <v-tooltip activator="parent" location="bottom">Reject</v-tooltip>
             </v-btn>
 
             <v-btn
               v-if="canCopy"
               color="success"
-              icon="mdi-eye"
               @click="showContentDialog = true"
             >
-              <v-tooltip activator="parent" location="top">
+              <v-icon icon="mdi-eye"></v-icon>
+              <v-tooltip activator="parent" location="bottom">
                 View Content
               </v-tooltip>
             </v-btn>
 
-            <v-btn
-              v-if="canCopy"
-              color="success"
-              icon="mdi-content-copy"
-              @click="handleCopy"
-            >
-              <v-tooltip activator="parent" location="top">Copy</v-tooltip>
+            <v-btn v-if="canCopy" color="success" @click="handleCopy">
+              <v-icon icon="mdi-content-copy"></v-icon>
+              <v-tooltip activator="parent" location="bottom">Copy</v-tooltip>
             </v-btn>
 
             <v-btn
@@ -315,19 +289,19 @@ const canAccept = computed(() => {
                 props.transfer.status === 'rejected'
               "
               color="info"
-              icon="mdi-delete"
               @click="handleDelete"
             >
-              <v-tooltip activator="parent" location="top">Delete</v-tooltip>
+              <v-icon icon="mdi-delete"></v-icon>
+              <v-tooltip activator="parent" location="bottom">Delete</v-tooltip>
             </v-btn>
 
             <v-btn
               v-if="canCancel"
               color="error"
-              icon="mdi-stop"
               @click="CancelTransfer(props.transfer.id)"
             >
-              <v-tooltip activator="parent" location="top">Cancel</v-tooltip>
+              <v-icon icon="mdi-stop"></v-icon>
+              <v-tooltip activator="parent" location="bottom">Cancel</v-tooltip>
             </v-btn>
           </v-btn-group>
         </div>
