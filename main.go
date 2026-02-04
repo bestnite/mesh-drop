@@ -10,6 +10,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 )
 
 //go:embed all:frontend/dist
@@ -28,6 +29,9 @@ func main() {
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
 		},
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "com.nite07.mesh-drop",
+		},
 	})
 
 	// 创建保存路径
@@ -36,7 +40,16 @@ func main() {
 		slog.Error("Failed to create save path", "path", conf.SavePath, "error", err)
 	}
 
-	// 文件传输端口
+	// 通知
+	notifier := notifications.New()
+	authorized, err := notifier.RequestNotificationAuthorization()
+	if err != nil {
+		slog.Error("Failed to request notification authorization", "error", err)
+	}
+	if !authorized {
+		slog.Error("Notification authorization not granted")
+	}
+
 	port := 9989
 
 	// 初始化发现服务
@@ -44,7 +57,7 @@ func main() {
 	discoveryService.Start()
 
 	// 初始化传输服务
-	transferService := transfer.NewService(conf, app, port, discoveryService)
+	transferService := transfer.NewService(conf, app, notifier, port, discoveryService)
 	transferService.Start()
 	// 加载传输历史
 	if conf.GetSaveHistory() {
@@ -56,6 +69,7 @@ func main() {
 	app.RegisterService(application.NewService(discoveryService))
 	app.RegisterService(application.NewService(transferService))
 	app.RegisterService(application.NewService(conf))
+	app.RegisterService(application.NewService(notifier))
 
 	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:          "mesh drop",

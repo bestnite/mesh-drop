@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 )
 
 // handleAsk 处理接收文件请求
@@ -48,6 +49,12 @@ func (s *Service) handleAsk(c *gin.Context) {
 			Accepted: true,
 			SavePath: s.config.GetSavePath(),
 		}
+	} else {
+		_ = s.notifier.SendNotification(notifications.NotificationOptions{
+			ID:    uuid.New().String(),
+			Title: "File Transfer Request",
+			Body:  fmt.Sprintf("%s wants to transfer %s", task.Sender, task.FileName),
+		})
 	}
 
 	// 等待用户决策或发送端放弃

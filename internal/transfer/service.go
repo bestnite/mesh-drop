@@ -10,12 +10,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 )
 
 type Service struct {
-	config *config.Config
-	app    *application.App
-	port   int
+	config   *config.Config
+	notifier *notifications.NotificationService
+	app      *application.App
+	port     int
 
 	// pendingRequests 存储等待用户确认的通道
 	// Key: TransferID, Value: *Transfer
@@ -28,11 +30,12 @@ type Service struct {
 	cancelMap sync.Map
 }
 
-func NewService(config *config.Config, app *application.App, port int, discoveryService *discovery.Service) *Service {
+func NewService(config *config.Config, app *application.App, notifier *notifications.NotificationService, port int, discoveryService *discovery.Service) *Service {
 	gin.SetMode(gin.ReleaseMode)
 
 	return &Service{
 		app:              app,
+		notifier:         notifier,
 		port:             port,
 		discoveryService: discoveryService,
 		config:           config,
