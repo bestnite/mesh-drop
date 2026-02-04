@@ -61,6 +61,9 @@ func main() {
 		X:              conf.WindowState.X,
 		Y:              conf.WindowState.Y,
 		EnableFileDrop: true,
+		Linux: application.LinuxWindow{
+			WebviewGpuPolicy: application.WebviewGpuPolicyAlways,
+		},
 	})
 
 	window.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {

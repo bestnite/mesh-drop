@@ -1,37 +1,5 @@
 <script setup lang="ts">
-import { computed, h } from "vue";
-import {
-  NCard,
-  NButton,
-  NIcon,
-  NProgress,
-  NSpace,
-  NText,
-  NTag,
-  useMessage,
-  NInput,
-  NDropdown,
-  NButtonGroup,
-} from "naive-ui";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-  faArrowUp,
-  faArrowDown,
-  faCircleExclamation,
-  faUser,
-  faFile,
-  faFileLines,
-  faFolder,
-  faClock,
-  faChevronDown,
-  faEye,
-  faCopy,
-  faTrash,
-  faXmark,
-  faStop,
-  faCheck,
-} from "@fortawesome/free-solid-svg-icons";
-
+import { computed, ref, h } from "vue";
 import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
 import {
   ResolvePendingRequest,
@@ -39,8 +7,6 @@ import {
   DeleteTransfer,
 } from "../../bindings/mesh-drop/internal/transfer/service";
 import { Dialogs, Clipboard } from "@wailsio/runtime";
-
-import { useDialog } from "naive-ui";
 
 const props = defineProps<{
   transfer: Transfer;
@@ -72,10 +38,10 @@ const percentage = computed(() =>
     ),
   ),
 );
-const progressStatus = computed(() => {
+const progressColor = computed(() => {
   if (props.transfer.status === "error") return "error";
   if (props.transfer.status === "completed") return "success";
-  return "default";
+  return "primary";
 });
 
 const acceptTransfer = () => {
@@ -99,10 +65,10 @@ const acceptToFolder = async () => {
   }
 };
 
-const dropdownOptions = [
+const dropdownItems = [
   {
-    label: "Accept To Folder",
-    key: "folder",
+    title: "Accept To Folder",
+    value: "folder",
   },
 ];
 
@@ -116,31 +82,18 @@ const handleDelete = () => {
   DeleteTransfer(props.transfer.id);
 };
 
-const message = useMessage();
-
 const handleCopy = async () => {
   Clipboard.SetText(props.transfer.text)
-    .then(() => {
-      message.success("Copied to clipboard");
-    })
+    // .then(() => {
+    //   message.success("Copied to clipboard");
+    // })
     .catch(() => {
-      message.error("Failed to copy to clipboard");
+      // message.error("Failed to copy to clipboard");
+      console.error("Failed to copy");
     });
 };
 
-const dialog = useDialog();
-const handleOpen = async () => {
-  const d = dialog.create({
-    title: "Text Content",
-    content: () =>
-      h(NInput, {
-        value: props.transfer.text,
-        readonly: true,
-        type: "textarea",
-        rows: 10,
-      }),
-  });
-};
+const showContentDialog = ref(false);
 
 const canCancel = computed(() => {
   if (
@@ -186,269 +139,212 @@ const canAccept = computed(() => {
 </script>
 
 <template>
-  <n-card size="small" class="transfer-item">
-    <div class="transfer-row">
-      <!-- 图标 -->
-      <div class="icon-wrapper">
-        <n-icon size="24" v-if="props.transfer.type === 'send'" color="#38bdf8">
-          <FontAwesomeIcon :icon="faArrowUp" />
-        </n-icon>
-        <n-icon
-          size="24"
-          v-else-if="props.transfer.type === 'receive'"
-          color="#22c55e">
-          <FontAwesomeIcon :icon="faArrowDown" />
-        </n-icon>
-        <n-icon size="24" v-else color="#f59e0b">
-          <FontAwesomeIcon :icon="faCircleExclamation" />
-        </n-icon>
-      </div>
-
-      <!-- 信息 -->
-      <div class="info-wrapper">
-        <div class="header-line">
-          <n-text
-            v-if="props.transfer.content_type === 'file'"
-            strong
-            class="filename"
-            :title="props.transfer.file_name">
-            <n-icon>
-              <FontAwesomeIcon :icon="faFile" />
-            </n-icon>
-            {{ props.transfer.file_name }}
-          </n-text>
-          <n-text
-            v-else-if="props.transfer.content_type === 'text'"
-            strong
-            class="filename"
-            title="Text">
-            <n-icon> <FontAwesomeIcon :icon="faFileLines" /> </n-icon>
-            Text</n-text
-          >
-          <n-text
-            v-else-if="props.transfer.content_type === 'folder'"
-            strong
-            class="filename"
-            title="Folder">
-            <n-icon> <FontAwesomeIcon :icon="faFolder" /> </n-icon>
-            {{ props.transfer.file_name || "Folder" }}</n-text
-          >
-          <n-tag
-            size="small"
-            :bordered="false"
-            v-if="
-              props.transfer.sender.name && props.transfer.type === 'receive'
-            ">
-            <template #icon>
-              <n-icon>
-                <FontAwesomeIcon :icon="faUser" />
-              </n-icon>
-            </template>
-            {{ props.transfer.sender.name }}
-          </n-tag>
-          <n-tag
-            size="small"
-            :bordered="false"
-            v-if="props.transfer.create_time">
-            <template #icon>
-              <n-icon>
-                <FontAwesomeIcon :icon="faClock" />
-              </n-icon>
-            </template>
-            {{ formatTime(props.transfer.create_time) }}
-          </n-tag>
+  <v-card class="transfer-item mb-2" variant="outlined">
+    <v-card-text class="py-2 px-3">
+      <div class="d-flex align-center flex-wrap ga-2">
+        <!-- 图标 -->
+        <div>
+          <v-icon
+            size="24"
+            v-if="props.transfer.type === 'send'"
+            color="info"
+            icon="mdi-arrow-up"
+          ></v-icon>
+          <v-icon
+            size="24"
+            v-else-if="props.transfer.type === 'receive'"
+            color="success"
+            icon="mdi-arrow-down"
+          ></v-icon>
+          <v-icon
+            size="24"
+            v-else
+            color="warning"
+            icon="mdi-alert-circle"
+          ></v-icon>
         </div>
 
-        <div class="meta-line">
-          <n-text depth="3" class="size">{{
-            formatSize(props.transfer.file_size)
-          }}</n-text>
+        <!-- 信息 -->
+        <div class="info-wrapper flex-grow-1" style="min-width: 0">
+          <div class="d-flex align-center ga-2 mb-1 flex-wrap">
+            <div class="font-weight-bold text-truncate d-flex align-center">
+              <v-icon
+                size="small"
+                class="mr-1"
+                v-if="props.transfer.content_type === 'file'"
+                icon="mdi-file"
+              ></v-icon>
+              <v-icon
+                size="small"
+                class="mr-1"
+                v-else-if="props.transfer.content_type === 'text'"
+                icon="mdi-file-document"
+              ></v-icon>
+              <v-icon
+                size="small"
+                class="mr-1"
+                v-else-if="props.transfer.content_type === 'folder'"
+                icon="mdi-folder"
+              ></v-icon>
+              {{
+                props.transfer.file_name ||
+                (props.transfer.content_type === "text" ? "Text" : "Folder")
+              }}
+            </div>
 
-          <!-- 状态文本（进行中/已完成） -->
-          <span>
-            <n-text depth="3" v-if="props.transfer.status === 'active'">
-              &nbsp;- {{ formatSpeed(props.transfer.progress.speed) }}</n-text
+            <v-chip
+              size="x-small"
+              v-if="
+                props.transfer.sender.name && props.transfer.type === 'receive'
+              "
+              prepend-icon="mdi-account"
             >
-            <n-text
-              depth="3"
+              {{ props.transfer.sender.name }}
+            </v-chip>
+
+            <v-chip
+              size="x-small"
+              v-if="props.transfer.create_time"
+              prepend-icon="mdi-clock-outline"
+            >
+              {{ formatTime(props.transfer.create_time) }}
+            </v-chip>
+          </div>
+
+          <div class="text-caption text-medium-emphasis d-flex align-center">
+            <span>{{ formatSize(props.transfer.file_size) }}</span>
+
+            <!-- 状态文本 -->
+            <span v-if="props.transfer.status === 'active'">
+              &nbsp;- {{ formatSpeed(props.transfer.progress.speed) }}
+            </span>
+            <span
               v-if="props.transfer.status === 'completed'"
-              type="success">
-              &nbsp;- Completed</n-text
+              class="text-success"
             >
-            <n-text
-              depth="3"
-              v-if="props.transfer.status === 'error'"
-              type="error">
-              &nbsp;- {{ props.transfer.error_msg || "Error" }}</n-text
-            >
-            <n-text
-              depth="3"
-              v-if="props.transfer.status === 'canceled'"
-              type="info">
-              &nbsp;- Canceled</n-text
-            >
-            <n-text
-              depth="3"
+              &nbsp;- Completed
+            </span>
+            <span v-if="props.transfer.status === 'error'" class="text-error">
+              &nbsp;- {{ props.transfer.error_msg || "Error" }}
+            </span>
+            <span v-if="props.transfer.status === 'canceled'" class="text-info">
+              &nbsp;- Canceled
+            </span>
+            <span
               v-if="props.transfer.status === 'rejected'"
-              type="error">
-              &nbsp;- Rejected</n-text
+              class="text-error"
             >
-            <n-text
-              depth="3"
+              &nbsp;- Rejected
+            </span>
+            <span
               v-if="props.transfer.status === 'pending'"
-              type="warning">
-              &nbsp;- Waiting for accept</n-text
+              class="text-warning"
             >
-          </span>
+              &nbsp;- Waiting for accept
+            </span>
+          </div>
+
+          <!-- 进度条 -->
+          <v-progress-linear
+            v-if="props.transfer.status === 'active'"
+            :model-value="percentage"
+            :color="progressColor"
+            height="4"
+            striped
+            class="mt-1"
+          ></v-progress-linear>
         </div>
 
-        <!-- 进度条 -->
-        <n-progress
-          v-if="props.transfer.status === 'active'"
-          type="line"
-          :percentage="percentage"
-          :status="progressStatus"
-          :height="4"
-          :show-indicator="false"
-          processing
-          style="margin-top: 4px" />
-      </div>
-
-      <!-- 操作按钮 -->
-      <div class="actions-wrapper">
-        <n-space>
-          <n-button-group size="small">
-            <n-button v-if="canAccept" type="success" @click="acceptTransfer">
-              <template #icon>
-                <n-icon>
-                  <FontAwesomeIcon :icon="faCheck" />
-                </n-icon>
-              </template>
-            </n-button>
-            <n-dropdown
-              trigger="click"
-              :options="dropdownOptions"
-              @select="handleSelect"
-              v-if="canAccept && props.transfer.content_type !== 'text'">
-              <n-button type="success">
-                <template #icon>
-                  <n-icon>
-                    <FontAwesomeIcon :icon="faChevronDown" />
-                  </n-icon>
-                </template>
-              </n-button>
-            </n-dropdown>
-            <n-button
+        <!-- 操作按钮 -->
+        <div class="actions-wrapper">
+          <v-btn-group density="compact" variant="outlined" divided>
+            <v-btn
               v-if="canAccept"
-              size="small"
-              type="error"
-              @click="rejectTransfer">
-              <template #icon>
-                <n-icon>
-                  <FontAwesomeIcon :icon="faXmark" />
-                </n-icon>
-              </template>
-            </n-button>
+              color="success"
+              icon="mdi-check"
+              @click="acceptTransfer"
+            ></v-btn>
 
-            <n-button type="success" @click="handleOpen" v-if="canCopy"
-              ><template #icon>
-                <n-icon>
-                  <FontAwesomeIcon :icon="faEye" />
-                </n-icon>
+            <v-menu v-if="canAccept && props.transfer.content_type !== 'text'">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  color="success"
+                  icon="mdi-chevron-down"
+                  v-bind="props"
+                ></v-btn>
               </template>
-            </n-button>
-            <n-button type="success" @click="handleCopy" v-if="canCopy"
-              ><template #icon>
-                <n-icon>
-                  <FontAwesomeIcon :icon="faCopy" />
-                </n-icon>
-              </template>
-            </n-button>
-            <n-button
-              type="success"
-              @click="handleDelete"
+              <v-list>
+                <v-list-item
+                  v-for="(item, index) in dropdownItems"
+                  :key="index"
+                  :value="item.value"
+                  @click="handleSelect(item.value)"
+                >
+                  <v-list-item-title>{{ item.title }}</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+
+            <v-btn
+              v-if="canAccept"
+              color="error"
+              icon="mdi-close"
+              @click="rejectTransfer"
+            ></v-btn>
+
+            <v-btn
+              v-if="canCopy"
+              color="success"
+              icon="mdi-eye"
+              @click="showContentDialog = true"
+            ></v-btn>
+
+            <v-btn
+              v-if="canCopy"
+              color="success"
+              icon="mdi-content-copy"
+              @click="handleCopy"
+            ></v-btn>
+
+            <v-btn
               v-if="
                 props.transfer.status === 'completed' ||
                 props.transfer.status === 'error' ||
                 props.transfer.status === 'canceled' ||
                 props.transfer.status === 'rejected'
-              ">
-              <template #icon>
-                <n-icon>
-                  <FontAwesomeIcon :icon="faTrash" />
-                </n-icon>
-              </template>
-            </n-button>
-            <n-button
+              "
+              color="info"
+              icon="mdi-delete"
+              @click="handleDelete"
+            ></v-btn>
+
+            <v-btn
               v-if="canCancel"
-              size="small"
-              type="error"
+              color="error"
+              icon="mdi-stop"
               @click="CancelTransfer(props.transfer.id)"
-              ><template #icon>
-                <n-icon>
-                  <FontAwesomeIcon :icon="faStop" />
-                </n-icon>
-              </template>
-            </n-button>
-          </n-button-group>
-        </n-space>
+            ></v-btn>
+          </v-btn-group>
+        </div>
       </div>
-    </div>
-  </n-card>
+    </v-card-text>
+  </v-card>
+
+  <v-dialog v-model="showContentDialog" width="600">
+    <v-card title="Text Content">
+      <v-card-text>
+        <v-textarea
+          :model-value="props.transfer.text"
+          readonly
+          rows="10"
+        ></v-textarea>
+      </v-card-text>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
-.transfer-item {
-  margin-bottom: 0.5rem;
-}
-
-.transfer-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.icon-wrapper {
-  display: flex;
-  align-items: center;
-}
-
 .info-wrapper {
-  flex: 1;
-  min-width: 0;
-}
-
-.header-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
-.filename {
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 14px;
-}
-
-.meta-line {
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-}
-
-@media (max-width: 640px) {
-  .actions-wrapper {
-    width: 100%;
-    margin-top: 8px;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .transfer-row {
-    gap: 8px;
-  }
 }
 </style>

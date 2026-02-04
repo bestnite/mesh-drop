@@ -1,40 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, h } from "vue";
-import {
-  NCard,
-  NButton,
-  NIcon,
-  NTag,
-  NSpace,
-  NDropdown,
-  NSelect,
-  type DropdownOption,
-  NModal,
-  NList,
-  NListItem,
-  NThing,
-  NEmpty,
-  NInput,
-} from "naive-ui";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-  faLinux,
-  faWindows,
-  faApple,
-} from "@fortawesome/free-brands-svg-icons";
-import {
-  faDesktop,
-  faGlobe,
-  faPaperPlane,
-  faChevronDown,
-  faFile,
-  faFolder,
-  faFont,
-  faClipboard,
-  faTrash,
-  faPlus,
-  faCloudArrowUp,
-} from "@fortawesome/free-solid-svg-icons";
+import { computed, ref, watch } from "vue";
 import { Peer } from "../../bindings/mesh-drop/internal/discovery/models";
 import { Dialogs, Events, Clipboard } from "@wailsio/runtime";
 import {
@@ -72,52 +37,39 @@ watch(
   { immediate: true },
 );
 
-const ipOptions = computed(() => {
-  return ips.value.map((ip) => ({
-    label: ip,
-    value: ip,
-  }));
-});
-
 const osIcon = computed(() => {
   switch (props.peer.os) {
     case "linux":
-      return faLinux;
+      return "mdi-linux";
     case "windows":
-      return faWindows;
+      return "mdi-microsoft-windows";
     case "darwin":
-      return faApple;
+      return "mdi-apple";
     default:
-      return faDesktop;
+      return "mdi-desktop-classic";
   }
 });
 
-const sendOptions: DropdownOption[] = [
+const sendOptions = [
   {
-    label: "Send Files",
-    key: "files",
-    icon: () =>
-      h(NIcon, null, { default: () => h(FontAwesomeIcon, { icon: faFile }) }),
+    title: "Send Files",
+    value: "files",
+    icon: "mdi-file",
   },
   {
-    label: "Send Folder",
-    key: "folder",
-    icon: () =>
-      h(NIcon, null, { default: () => h(FontAwesomeIcon, { icon: faFolder }) }),
+    title: "Send Folder",
+    value: "folder",
+    icon: "mdi-folder",
   },
   {
-    label: "Send Text",
-    key: "text",
-    icon: () =>
-      h(NIcon, null, { default: () => h(FontAwesomeIcon, { icon: faFont }) }),
+    title: "Send Text",
+    value: "text",
+    icon: "mdi-format-font",
   },
   {
-    label: "Send Clipboard",
-    key: "clipboard",
-    icon: () =>
-      h(NIcon, null, {
-        default: () => h(FontAwesomeIcon, { icon: faClipboard }),
-      }),
+    title: "Send Clipboard",
+    value: "clipboard",
+    icon: "mdi-clipboard",
   },
 ];
 
@@ -255,159 +207,180 @@ const handleSendFiles = () => {
 </script>
 
 <template>
-  <n-card hoverable class="peer-card">
-    <template #header>
-      <div style="display: flex; align-items: center; gap: 8px">
-        <n-icon size="24">
-          <FontAwesomeIcon :icon="osIcon" />
-        </n-icon>
-        <span style="user-select: none">{{ peer.name }}</span>
+  <v-card hover link class="peer-card pa-2">
+    <template v-slot:title>
+      <div class="d-flex align-center">
+        <v-icon :icon="osIcon" size="24" class="mr-2"></v-icon>
+        <span class="text-subtitle-1 font-weight-bold">{{ peer.name }}</span>
       </div>
     </template>
 
-    <n-space vertical>
-      <div style="display: flex; align-items: center; gap: 8px">
-        <n-icon>
-          <FontAwesomeIcon :icon="faGlobe" />
-        </n-icon>
-        <!-- Single IP Display -->
-        <n-tag
-          v-if="ips.length === 1"
-          :bordered="false"
-          type="info"
-          size="small">
-          {{ ips[0] }}
-        </n-tag>
-        <!-- Multiple IP Selector -->
-        <n-select
-          v-else-if="ips.length > 1"
-          v-model:value="selectedIp"
-          :options="ipOptions"
-          size="small"
-          style="width: 140px" />
-        <!-- No Route -->
-        <n-tag v-else :bordered="false" type="warning" size="small">
-          No Route
-        </n-tag>
-      </div>
-    </n-space>
+    <template v-slot:text>
+      <div class="d-flex align-center flex-wrap ga-2 mt-2">
+        <v-icon icon="mdi-web" size="20" class="text-medium-emphasis"></v-icon>
 
-    <template #action>
-      <div style="display: flex; gap: 8px">
-        <n-dropdown
-          trigger="click"
-          :options="sendOptions"
-          @select="handleAction"
-          :disabled="ips.length === 0">
-          <n-button type="primary" block dashed style="width: 100%">
-            <template #icon>
-              <n-icon>
-                <FontAwesomeIcon :icon="faPaperPlane" />
-              </n-icon>
+        <!-- Single IP Display -->
+        <v-chip v-if="ips.length === 1" size="small" color="info" label>
+          {{ ips[0] }}
+        </v-chip>
+
+        <!-- Multiple IP Selector -->
+        <div v-else-if="ips.length > 1" style="width: 150px">
+          <v-select
+            v-model="selectedIp"
+            :items="ips"
+            density="compact"
+            hide-details
+            variant="outlined"
+            single-line
+          ></v-select>
+        </div>
+
+        <!-- No Route -->
+        <v-chip v-else color="warning" size="small" label> No Route </v-chip>
+      </div>
+    </template>
+
+    <template v-slot:actions>
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            v-bind="props"
+            block
+            color="primary"
+            variant="tonal"
+            :disabled="ips.length === 0"
+            append-icon="mdi-chevron-down"
+          >
+            <template v-slot:prepend>
+              <v-icon icon="mdi-send"></v-icon>
             </template>
             Send...
-            <n-icon style="margin-left: 4px">
-              <FontAwesomeIcon :icon="faChevronDown" />
-            </n-icon>
-          </n-button>
-        </n-dropdown>
-      </div>
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item
+            v-for="(item, index) in sendOptions"
+            :key="index"
+            :value="item.value"
+            @click="handleAction(item.value)"
+          >
+            <template v-slot:prepend>
+              <v-icon :icon="item.icon"></v-icon>
+            </template>
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
     </template>
-  </n-card>
+  </v-card>
 
   <!-- 文件发送 Modal -->
-  <n-modal
-    :mask-closable="false"
-    v-model:show="showFileModal"
-    preset="card"
-    title="Send Files"
-    style="width: 600px; max-width: 90%"
-    :bordered="false">
-    <div
-      v-if="fileList.length === 0"
-      class="drop-zone"
-      @click="openFileDialog"
-      data-file-drop-target>
-      <n-empty description="Click to select files">
-        <template #icon>
-          <n-icon :size="48">
-            <FontAwesomeIcon :icon="faCloudArrowUp" />
-          </n-icon>
-        </template>
-      </n-empty>
-    </div>
+  <v-dialog v-model="showFileModal" width="600" persistent eager>
+    <v-card title="Send Files">
+      <v-card-text>
+        <div
+          v-if="fileList.length === 0"
+          class="drop-zone pa-10 text-center rounded-lg border-dashed"
+          @click="openFileDialog"
+          data-file-drop-target
+        >
+          <v-icon
+            icon="mdi-cloud-upload"
+            size="48"
+            color="primary"
+            class="mb-2"
+          ></v-icon>
+          <div class="text-body-1 text-medium-emphasis">
+            Click to select files
+          </div>
+        </div>
 
-    <div v-else>
-      <div
-        style="max-height: 400px; overflow-y: auto; margin-bottom: 16px"
-        data-file-drop-target>
-        <n-list bordered>
-          <n-list-item v-for="(file, index) in fileList" :key="file.path">
-            <template #suffix>
-              <n-button text type="error" @click="handleRemoveFile(index)">
-                <template #icon>
-                  <n-icon><FontAwesomeIcon :icon="faTrash" /></n-icon>
-                </template>
-              </n-button>
-            </template>
-            <n-thing :title="file.name" :description="file.path"></n-thing>
-          </n-list-item>
-        </n-list>
-      </div>
-      <n-button dashed block @click="openFileDialog">
-        <template #icon>
-          <n-icon><FontAwesomeIcon :icon="faPlus" /></n-icon>
-        </template>
-        Add more files
-      </n-button>
-    </div>
+        <div v-else>
+          <v-list
+            class="mb-4 text-left"
+            border
+            rounded
+            max-height="400"
+            style="overflow-y: auto"
+            data-file-drop-target
+          >
+            <v-list-item
+              v-for="(file, index) in fileList"
+              :key="file.path"
+              :title="file.name"
+              :subtitle="file.path"
+              lines="two"
+            >
+              <template v-slot:append>
+                <v-btn
+                  icon="mdi-delete"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  @click="handleRemoveFile(index)"
+                ></v-btn>
+              </template>
+            </v-list-item>
+          </v-list>
 
-    <template #footer>
-      <n-space justify="end">
-        <n-button @click="handleCancelFiles">Cancel</n-button>
-        <n-button
-          type="primary"
+          <v-btn
+            block
+            variant="outlined"
+            style="border-style: dashed"
+            prepend-icon="mdi-plus"
+            @click="openFileDialog"
+            class="mt-2"
+          >
+            Add more files
+          </v-btn>
+        </div>
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn variant="text" @click="handleCancelFiles">Cancel</v-btn>
+        <v-btn
+          color="primary"
           @click="handleSendFiles"
-          :disabled="fileList.length === 0">
+          :disabled="fileList.length === 0"
+        >
           Send {{ fileList.length > 0 ? `(${fileList.length})` : "" }}
-        </n-button>
-      </n-space>
-    </template>
-  </n-modal>
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
   <!-- 文本发送 Modal -->
-  <n-modal
-    :mask-closable="false"
-    v-model:show="showTextModal"
-    preset="card"
-    title="Send Text"
-    style="width: 500px; max-width: 90%"
-    :bordered="false">
-    <n-input
-      v-model:value="textContent"
-      type="textarea"
-      placeholder="Type something to send..."
-      :autosize="{ minRows: 4, maxRows: 10 }" />
-    <template #footer>
-      <n-space justify="end">
-        <n-button @click="showTextModal = false">Cancel</n-button>
-        <n-button
-          type="primary"
+  <v-dialog v-model="showTextModal" width="500" persistent eager>
+    <v-card title="Send Text">
+      <v-card-text>
+        <v-textarea
+          v-model="textContent"
+          label="Content"
+          placeholder="Type something to send..."
+          rows="4"
+          auto-grow
+        ></v-textarea>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn variant="text" @click="showTextModal = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
           @click="executeSendText"
-          :disabled="!textContent">
+          :disabled="!textContent"
+        >
           Send
-        </n-button>
-      </n-space>
-    </template>
-  </n-modal>
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
 .drop-zone {
-  border: 2px dashed #ccc;
-  border-radius: 8px;
-  padding: 40px;
-  text-align: center;
+  border: 2px dashed #666; /* Use a darker color or theme var */
   cursor: pointer;
   transition: all 0.3s;
 }
