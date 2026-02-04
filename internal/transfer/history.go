@@ -15,7 +15,7 @@ func (s *Service) SaveHistory() {
 	if err != nil {
 		return
 	}
-	file, err := os.OpenFile(historyPath, os.O_CREATE|os.O_RDWR, os.FileMode(0644))
+	file, err := os.OpenFile(historyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return
 	}

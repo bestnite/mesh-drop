@@ -81,19 +81,24 @@ func main() {
 
 	// 窗口关闭事件
 	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		// 保存配置
 		x, y := window.Position()
 		width, height := window.Size()
-		conf.WindowState = config.WindowState{
+		conf.SetWindowState(config.WindowState{
 			X:      x,
 			Y:      y,
 			Width:  width,
 			Height: height,
-		}
-		_ = conf.Save()
+		})
+
 		// 保存传输历史
 		if conf.GetSaveHistory() {
 			transferService.SaveHistory()
+		}
+
+		// 保存配置
+		err := conf.Save()
+		if err != nil {
+			slog.Error("Failed to save config", "error", err)
 		}
 	})
 

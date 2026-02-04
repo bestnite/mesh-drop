@@ -263,35 +263,49 @@ const canAccept = computed(() => {
               color="success"
               icon="mdi-content-save"
               @click="acceptTransfer"
-            ></v-btn>
+            >
+              <v-tooltip activator="parent" location="top">Accept</v-tooltip>
+            </v-btn>
 
             <v-btn
               v-if="canAccept"
               color="success"
               icon="mdi-folder-arrow-right"
               @click="acceptToFolder"
-            ></v-btn>
+            >
+              <v-tooltip activator="parent" location="top">
+                Save to Folder
+              </v-tooltip>
+            </v-btn>
 
             <v-btn
               v-if="canAccept"
               color="error"
               icon="mdi-close"
               @click="rejectTransfer"
-            ></v-btn>
+            >
+              <v-tooltip activator="parent" location="top">Reject</v-tooltip>
+            </v-btn>
 
             <v-btn
               v-if="canCopy"
               color="success"
               icon="mdi-eye"
               @click="showContentDialog = true"
-            ></v-btn>
+            >
+              <v-tooltip activator="parent" location="top">
+                View Content
+              </v-tooltip>
+            </v-btn>
 
             <v-btn
               v-if="canCopy"
               color="success"
               icon="mdi-content-copy"
               @click="handleCopy"
-            ></v-btn>
+            >
+              <v-tooltip activator="parent" location="top">Copy</v-tooltip>
+            </v-btn>
 
             <v-btn
               v-if="
@@ -303,14 +317,18 @@ const canAccept = computed(() => {
               color="info"
               icon="mdi-delete"
               @click="handleDelete"
-            ></v-btn>
+            >
+              <v-tooltip activator="parent" location="top">Delete</v-tooltip>
+            </v-btn>
 
             <v-btn
               v-if="canCancel"
               color="error"
               icon="mdi-stop"
               @click="CancelTransfer(props.transfer.id)"
-            ></v-btn>
+            >
+              <v-tooltip activator="parent" location="top">Cancel</v-tooltip>
+            </v-btn>
           </v-btn-group>
         </div>
       </div>

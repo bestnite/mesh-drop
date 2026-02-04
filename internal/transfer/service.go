@@ -65,7 +65,7 @@ func (s *Service) Start() {
 }
 
 func (s *Service) GetTransferList() []*Transfer {
-	var requests []*Transfer
+	var requests []*Transfer = make([]*Transfer, 0)
 	s.transferList.Range(func(key, value any) bool {
 		requests = append(requests, value.(*Transfer))
 		return true

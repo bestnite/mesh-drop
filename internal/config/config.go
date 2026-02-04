@@ -77,6 +77,7 @@ func Load() *Config {
 	}
 	v.SetDefault("host_name", defaultHostName)
 	v.SetDefault("id", uuid.New().String())
+	v.SetDefault("save_history", true)
 
 	v.SetConfigFile(configFile)
 	v.SetConfigType("json")
@@ -181,4 +182,17 @@ func (c *Config) GetSaveHistory() bool {
 
 func (c *Config) GetVersion() string {
 	return Version
+}
+
+func (c *Config) SetWindowState(state WindowState) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.WindowState = state
+	c.v.Set("window_state", state)
+}
+
+func (c *Config) GetWindowState() WindowState {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.WindowState
 }
