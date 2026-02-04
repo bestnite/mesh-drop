@@ -17,21 +17,36 @@ export function CancelTransfer(transferID: string): $CancellablePromise<void> {
     return $Call.ByID(900002248, transferID);
 }
 
+/**
+ * CleanTransferList 清理完成的 transfer
+ */
+export function CleanTransferList(): $CancellablePromise<void> {
+    return $Call.ByID(3775121017);
+}
+
+export function DeleteTransfer(transferID: string): $CancellablePromise<void> {
+    return $Call.ByID(4158310409, transferID);
+}
+
 export function GetPort(): $CancellablePromise<number> {
     return $Call.ByID(4195335736);
 }
 
-export function GetTransfer(transferID: string): $CancellablePromise<[$models.Transfer, boolean]> {
+export function GetTransfer(transferID: string): $CancellablePromise<[$models.Transfer | null, boolean]> {
     return $Call.ByID(1198637268, transferID).then(($result: any) => {
-        $result[0] = $$createType0($result[0]);
+        $result[0] = $$createType1($result[0]);
         return $result;
     });
 }
 
-export function GetTransferList(): $CancellablePromise<$models.Transfer[]> {
+export function GetTransferList(): $CancellablePromise<($models.Transfer | null)[]> {
     return $Call.ByID(584162076).then(($result: any) => {
-        return $$createType1($result);
+        return $$createType2($result);
     });
+}
+
+export function NotifyTransferListUpdate(): $CancellablePromise<void> {
+    return $Call.ByID(1220032142);
 }
 
 /**
@@ -46,6 +61,10 @@ export function SendFile(target: discovery$0.Peer | null, targetIP: string, file
     return $Call.ByID(2954589433, target, targetIP, filePath);
 }
 
+export function SendFiles(target: discovery$0.Peer | null, targetIP: string, filePaths: string[]): $CancellablePromise<void> {
+    return $Call.ByID(3308811582, target, targetIP, filePaths);
+}
+
 export function SendFolder(target: discovery$0.Peer | null, targetIP: string, folderPath: string): $CancellablePromise<void> {
     return $Call.ByID(3258308403, target, targetIP, folderPath);
 }
@@ -58,6 +77,11 @@ export function Start(): $CancellablePromise<void> {
     return $Call.ByID(3611800535);
 }
 
+export function StoreTransferToList(transfer: $models.Transfer | null): $CancellablePromise<void> {
+    return $Call.ByID(3225941780, transfer);
+}
+
 // Private type creation functions
 const $$createType0 = $models.Transfer.createFrom;
-const $$createType1 = $Create.Array($$createType0);
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Array($$createType1);

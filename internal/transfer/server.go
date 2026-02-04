@@ -19,6 +19,7 @@ import (
 
 // handleAsk 处理接收文件请求
 func (s *Service) handleAsk(c *gin.Context) {
+	defer s.NotifyTransferListUpdate()
 	var task Transfer
 
 	if err := c.ShouldBindJSON(&task); err != nil {
@@ -39,10 +40,9 @@ func (s *Service) handleAsk(c *gin.Context) {
 	task.Type = TransferTypeReceive
 	task.Status = TransferStatusPending
 	task.DecisionChan = make(chan Decision)
-	s.transferList.Store(task.ID, task)
+	s.StoreTransferToList(&task)
 
 	// 通知 Wails 前端
-	s.app.Event.Emit("transfer:refreshList")
 
 	// 等待用户决策或发送端放弃
 	select {
@@ -53,34 +53,28 @@ func (s *Service) handleAsk(c *gin.Context) {
 			task.SavePath = decision.SavePath
 			token := uuid.New().String()
 			task.Token = token
-			s.transferList.Store(task.ID, task)
 		} else {
 			task.Status = TransferStatusRejected
-			s.transferList.Store(task.ID, task)
 		}
 		c.JSON(http.StatusOK, TransferAskResponse{
 			ID:       task.ID,
 			Accepted: decision.Accepted,
 			Token:    task.Token,
 		})
-		s.app.Event.Emit("transfer:refreshList")
+
 	case <-c.Request.Context().Done():
 		// 发送端放弃
 		task.Status = TransferStatusCanceled
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 	}
 }
 
 // ResolvePendingRequest 外部调用，解决待处理的传输请求
 // 返回 true 表示成功处理，false 表示未找到该 ID 的请求
 func (s *Service) ResolvePendingRequest(id string, accept bool, savePath string) bool {
-	val, ok := s.transferList.Load(id)
+	task, ok := s.GetTransfer(id)
 	if !ok {
 		return false
 	}
-
-	task := val.(Transfer)
 	task.DecisionChan <- Decision{
 		ID:       id,
 		Accepted: accept,
@@ -91,6 +85,7 @@ func (s *Service) ResolvePendingRequest(id string, accept bool, savePath string)
 
 // handleUpload 处理接收文件请求
 func (s *Service) handleUpload(c *gin.Context) {
+	defer s.NotifyTransferListUpdate()
 	id := c.Param("id")
 	token := c.Query("token")
 
@@ -104,7 +99,7 @@ func (s *Service) handleUpload(c *gin.Context) {
 	}
 
 	// 获取传输任务
-	val, ok := s.transferList.Load(id)
+	task, ok := s.GetTransfer(id)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, TransferUploadResponse{
 			ID:      id,
@@ -113,7 +108,6 @@ func (s *Service) handleUpload(c *gin.Context) {
 		})
 		return
 	}
-	task := val.(Transfer)
 	ctx, cancel := context.WithCancel(c.Request.Context())
 	s.cancelMap.Store(task.ID, cancel)
 	defer func() {
@@ -143,8 +137,6 @@ func (s *Service) handleUpload(c *gin.Context) {
 
 	// 更新状态为 active
 	task.Status = TransferStatusActive
-	s.transferList.Store(task.ID, task)
-	s.app.Event.Emit("transfer:refreshList")
 
 	savePath := task.SavePath
 	if savePath == "" {
@@ -170,21 +162,16 @@ func (s *Service) handleUpload(c *gin.Context) {
 			slog.Error("Failed to create file", "error", err, "component", "transfer")
 			task.Status = TransferStatusError
 			task.ErrorMsg = fmt.Errorf("receiver failed to create file: %v", err).Error()
-			s.transferList.Store(task.ID, task)
-			// 通知前端传输失败
-			s.app.Event.Emit("transfer:refreshList")
 			return
 		}
 		defer file.Close()
-		s.receive(c, &task, file, ctxReader)
+		s.receive(c, task, file, ctxReader)
 	case ContentTypeText:
 		var buf bytes.Buffer
-		s.receive(c, &task, &buf, ctxReader)
+		s.receive(c, task, &buf, ctxReader)
 		task.Text = buf.String()
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 	case ContentTypeFolder:
-		s.receiveFolder(c, savePath, &task, ctxReader)
+		s.receiveFolder(c, savePath, task, ctxReader)
 	}
 }
 
@@ -199,8 +186,8 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer, ctxR
 				Total:   total,
 				Speed:   speed,
 			}
-			s.transferList.Store(task.ID, *task)
-			s.app.Event.Emit("transfer:refreshList")
+			task.Status = TransferStatusActive
+			s.NotifyTransferListUpdate()
 		},
 	}
 
@@ -211,8 +198,6 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer, ctxR
 			slog.Info("Sender canceled transfer (Network/Context disconnected)", "id", task.ID, "raw_err", err)
 			task.ErrorMsg = "Sender disconnected"
 			task.Status = TransferStatusCanceled
-			s.transferList.Store(task.ID, *task)
-			s.app.Event.Emit("transfer:refreshList")
 			return
 		}
 
@@ -227,8 +212,6 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer, ctxR
 				Message: "File transfer canceled",
 				Status:  TransferStatusCanceled,
 			})
-			s.transferList.Store(task.ID, *task)
-			s.app.Event.Emit("transfer:refreshList")
 			return
 		}
 
@@ -241,8 +224,6 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer, ctxR
 		slog.Error("Failed to write file", "error", err, "component", "transfer")
 		task.Status = TransferStatusError
 		task.ErrorMsg = fmt.Errorf("failed to write file: %v", err).Error()
-		s.transferList.Store(task.ID, *task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 
@@ -253,11 +234,11 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer, ctxR
 	})
 	// 传输成功，任务结束
 	task.Status = TransferStatusCompleted
-	s.transferList.Store(task.ID, *task)
-	s.app.Event.Emit("transfer:refreshList")
 }
 
 func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer, ctxReader io.Reader) {
+	defer s.NotifyTransferListUpdate()
+
 	// 创建根目录
 	destPath := filepath.Join(savePath, task.FileName)
 	if err := os.MkdirAll(destPath, 0755); err != nil {
@@ -269,8 +250,6 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 		slog.Error("Failed to create folder", "error", err, "component", "transfer")
 		task.Status = TransferStatusError
 		task.ErrorMsg = fmt.Errorf("receiver failed to create folder: %v", err).Error()
-		s.transferList.Store(task.ID, *task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 
@@ -284,8 +263,8 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 				Total:   total,
 				Speed:   speed,
 			}
-			s.transferList.Store(task.ID, *task)
-			s.app.Event.Emit("transfer:refreshList")
+			task.Status = TransferStatusActive
+			s.NotifyTransferListUpdate()
 		},
 	}
 
@@ -298,8 +277,6 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 			task.Status = TransferStatusCanceled
 			task.ErrorMsg = "Sender disconnected"
 			// 发送端已断开，无需也不应再发送 c.JSON
-			s.transferList.Store(task.ID, *task)
-			s.app.Event.Emit("transfer:refreshList")
 			return true
 		}
 
@@ -313,8 +290,6 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 				Message: "File transfer canceled",
 				Status:  TransferStatusCanceled,
 			})
-			s.transferList.Store(task.ID, *task)
-			s.app.Event.Emit("transfer:refreshList")
 			return true
 		}
 
@@ -327,8 +302,6 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 			Message: fmt.Sprintf("Transfer failed: %v", err),
 			Status:  TransferStatusError,
 		})
-		s.transferList.Store(task.ID, *task)
-		s.app.Event.Emit("transfer:refreshList")
 		return true
 	}
 
@@ -378,6 +351,4 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 	task.Progress.Total = task.FileSize
 	task.Progress.Current = task.FileSize
 	task.Status = TransferStatusCompleted
-	s.transferList.Store(task.ID, *task)
-	s.app.Event.Emit("transfer:refreshList")
 }

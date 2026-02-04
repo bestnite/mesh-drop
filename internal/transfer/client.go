@@ -19,6 +19,12 @@ import (
 	"github.com/google/uuid"
 )
 
+func (s *Service) SendFiles(target *discovery.Peer, targetIP string, filePaths []string) {
+	for _, filePath := range filePaths {
+		go s.SendFile(target, targetIP, filePath)
+	}
+}
+
 func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath string) {
 	taskID := uuid.New().String()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -28,6 +34,7 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 	defer func() {
 		s.cancelMap.Delete(taskID)
 		cancel()
+		s.NotifyTransferListUpdate()
 	}()
 
 	file, err := os.Open(filePath)
@@ -42,21 +49,19 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 		return
 	}
 
-	task := Transfer{
-		ID:       taskID,
-		FileName: filepath.Base(filePath),
-		FileSize: stat.Size(),
-		Sender: Sender{
+	task := NewTransfer(
+		taskID,
+		Sender{
 			ID:   s.discoveryService.GetID(),
 			Name: s.discoveryService.GetName(),
 		},
-		Type:        TransferTypeSend,
-		Status:      TransferStatusPending,
-		ContentType: ContentTypeFile,
-	}
+		WithFileName(filepath.Base(filePath)),
+		WithFileSize(stat.Size()),
+		WithType(TransferTypeSend),
+		WithContentType(ContentTypeFile),
+	)
 
-	s.transferList.Store(task.ID, task)
-	s.app.Event.Emit("transfer:refreshList")
+	s.StoreTransferToList(task)
 
 	askResp, err := s.ask(ctx, target, targetIP, task)
 	if err != nil {
@@ -67,8 +72,6 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 			task.Status = TransferStatusError
 			task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
 		}
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 	if askResp.Accepted {
@@ -76,8 +79,6 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 	} else {
 		// 接收方拒绝
 		task.Status = TransferStatusRejected
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 }
@@ -91,6 +92,7 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 	defer func() {
 		s.cancelMap.Delete(taskID)
 		cancel()
+		s.NotifyTransferListUpdate()
 	}()
 
 	size, err := calculateTarSize(ctx, folderPath)
@@ -99,29 +101,29 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 		return
 	}
 
-	task := Transfer{
-		ID:       taskID,
-		FileName: filepath.Base(folderPath),
-		FileSize: size,
-		Sender: Sender{
+	task := NewTransfer(
+		taskID,
+		Sender{
 			ID:   s.discoveryService.GetID(),
 			Name: s.discoveryService.GetName(),
 		},
-		Type:        TransferTypeSend,
-		Status:      TransferStatusPending,
-		ContentType: ContentTypeFolder,
-	}
+		WithFileName(filepath.Base(folderPath)),
+		WithFileSize(size),
+		WithType(TransferTypeSend),
+		WithContentType(ContentTypeFolder),
+	)
 
-	s.transferList.Store(task.ID, task)
-	s.app.Event.Emit("transfer:refreshList")
+	s.StoreTransferToList(task)
 
 	askResp, err := s.ask(ctx, target, targetIP, task)
 	if err != nil {
-		// 如果请求发送失败，更新状态为 Error
-		task.Status = TransferStatusError
-		task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
+		if errors.Is(err, context.Canceled) {
+			task.Status = TransferStatusCanceled
+		} else {
+			// 如果请求发送失败，更新状态为 Error
+			task.Status = TransferStatusError
+			task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
+		}
 		return
 	}
 	if askResp.Accepted {
@@ -137,9 +139,6 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 	} else {
 		// 接收方拒绝
 		task.Status = TransferStatusRejected
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
-		return
 	}
 }
 
@@ -152,32 +151,32 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 	defer func() {
 		s.cancelMap.Delete(taskID)
 		cancel()
+		s.NotifyTransferListUpdate()
 	}()
 
 	r := bytes.NewReader([]byte(text))
-	task := Transfer{
-		ID:       taskID,
-		FileName: "",
-		FileSize: int64(len(text)),
-		Sender: Sender{
+	task := NewTransfer(
+		taskID,
+		Sender{
 			ID:   s.discoveryService.GetID(),
 			Name: s.discoveryService.GetName(),
 		},
-		Type:        TransferTypeSend,
-		Status:      TransferStatusPending,
-		ContentType: ContentTypeText,
-	}
+		WithFileSize(int64(len(text))),
+		WithType(TransferTypeSend),
+		WithContentType(ContentTypeText),
+	)
 
-	s.transferList.Store(task.ID, task)
-	s.app.Event.Emit("transfer:refreshList")
+	s.StoreTransferToList(task)
 
 	askResp, err := s.ask(ctx, target, targetIP, task)
 	if err != nil {
-		// 如果请求发送失败，更新状态为 Error
-		task.Status = TransferStatusError
-		task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
+		if errors.Is(err, context.Canceled) {
+			task.Status = TransferStatusCanceled
+		} else {
+			// 如果请求发送失败，更新状态为 Error
+			task.Status = TransferStatusError
+			task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
+		}
 		return
 	}
 	if askResp.Accepted {
@@ -185,14 +184,12 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 	} else {
 		// 接收方拒绝
 		task.Status = TransferStatusRejected
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 }
 
 // ask 向接收端发送传输请求
-func (s *Service) ask(ctx context.Context, target *discovery.Peer, targetIP string, task Transfer) (TransferAskResponse, error) {
+func (s *Service) ask(ctx context.Context, target *discovery.Peer, targetIP string, task *Transfer) (TransferAskResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return TransferAskResponse{}, err
 	}
@@ -225,7 +222,11 @@ func (s *Service) ask(ctx context.Context, target *discovery.Peer, targetIP stri
 }
 
 // processTransfer 传输数据
-func (s *Service) processTransfer(ctx context.Context, askResp TransferAskResponse, target *discovery.Peer, targetIP string, task Transfer, payload io.Reader) {
+func (s *Service) processTransfer(ctx context.Context, askResp TransferAskResponse, target *discovery.Peer, targetIP string, task *Transfer, payload io.Reader) {
+	defer func() {
+		s.NotifyTransferListUpdate()
+	}()
+
 	if err := ctx.Err(); err != nil {
 		return
 	}
@@ -244,8 +245,7 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 				Speed:   speed,
 			}
 			task.Status = TransferStatusActive
-			s.transferList.Store(task.ID, task)
-			s.app.Event.Emit("transfer:refreshList")
+			s.NotifyTransferListUpdate()
 		},
 	}
 
@@ -265,8 +265,6 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 			task.ErrorMsg = fmt.Sprintf("Failed to upload file: %v", err)
 			slog.Error("Failed to upload file", "url", uploadUrl.String(), "error", err, "component", "transfer-client")
 		}
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 	defer resp.Body.Close()
@@ -279,8 +277,6 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 	if resp.StatusCode != http.StatusOK {
 		task.Status = TransferStatusError
 		task.ErrorMsg = uploadResp.Message
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 
@@ -288,15 +284,11 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 	if uploadResp.Status == TransferStatusCanceled {
 		task.Status = TransferStatusCanceled
 		task.ErrorMsg = uploadResp.Message
-		s.transferList.Store(task.ID, task)
-		s.app.Event.Emit("transfer:refreshList")
 		return
 	}
 
 	// 传输成功，任务结束
 	task.Status = TransferStatusCompleted
-	s.transferList.Store(task.ID, task)
-	s.app.Event.Emit("transfer:refreshList")
 }
 
 type countWriter struct {

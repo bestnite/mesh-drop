@@ -7,11 +7,15 @@ import type { Events } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import type * as main$0 from "../../../../../mesh-drop/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import type * as discovery$0 from "../../../../../mesh-drop/internal/discovery/models.js";
 
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "files-dropped": main$0.FilesDroppedEvent;
             "peers:update": discovery$0.Peer[];
             "transfer:refreshList": void;
         }

@@ -8,16 +8,21 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as main$0 from "../../../../../mesh-drop/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as discovery$0 from "../../../../../mesh-drop/internal/discovery/models.js";
 
 function configure() {
     Object.freeze(Object.assign($Create.Events, {
-        "peers:update": $$createType1,
+        "files-dropped": $$createType0,
+        "peers:update": $$createType2,
     }));
 }
 
 // Private type creation functions
-const $$createType0 = discovery$0.Peer.createFrom;
-const $$createType1 = $Create.Array($$createType0);
+const $$createType0 = main$0.FilesDroppedEvent.createFrom;
+const $$createType1 = discovery$0.Peer.createFrom;
+const $$createType2 = $Create.Array($$createType1);
 
 configure();

@@ -16,10 +16,6 @@ import {
   NBadge,
   NButton,
   NIcon,
-  NDrawer,
-  NDrawerContent,
-  useDialog,
-  NInput,
 } from "naive-ui";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -31,18 +27,9 @@ import {
 import { type MenuOption } from "naive-ui";
 import { Peer } from "../../bindings/mesh-drop/internal/discovery/models";
 import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
-import {
-  GetPeers,
-  GetPeerByIP,
-} from "../../bindings/mesh-drop/internal/discovery/service";
+import { GetPeers } from "../../bindings/mesh-drop/internal/discovery/service";
 import { Events } from "@wailsio/runtime";
-import {
-  GetTransferList,
-  SendFile,
-  SendText,
-  SendFolder,
-} from "../../bindings/mesh-drop/internal/transfer/service";
-import { Dialogs, Clipboard } from "@wailsio/runtime";
+import { GetTransferList } from "../../bindings/mesh-drop/internal/transfer/service";
 
 const peers = ref<Peer[]>([]);
 const transferList = ref<Transfer[]>([]);
@@ -54,7 +41,10 @@ const isMobile = ref(false);
 onMounted(async () => {
   checkMobile();
   window.addEventListener("resize", checkMobile);
-  transferList.value = await GetTransferList();
+  const list = await GetTransferList();
+  transferList.value = (
+    (list || []).filter((t) => t !== null) as Transfer[]
+  ).sort((a, b) => b.create_time - a.create_time);
 });
 
 const checkMobile = () => {
@@ -110,7 +100,10 @@ Events.On("peers:update", (event) => {
 });
 
 Events.On("transfer:refreshList", async () => {
-  transferList.value = await GetTransferList();
+  const list = await GetTransferList();
+  transferList.value = (
+    (list || []).filter((t) => t !== null) as Transfer[]
+  ).sort((a, b) => b.create_time - a.create_time);
 });
 
 // --- 计算属性 ---
@@ -121,83 +114,6 @@ const pendingCount = computed(() => {
 });
 
 // --- 操作 ---
-
-const handleSendFile = async (ip: string) => {
-  try {
-    const filePath = await Dialogs.OpenFile({
-      Title: "Select file to send",
-    });
-    if (!filePath) return;
-    const peer = await GetPeerByIP(ip);
-    if (!peer) return;
-    activeKey.value = "transfers";
-    await SendFile(peer, ip, filePath);
-  } catch (e: any) {
-    console.error(e);
-    alert("Failed to send file: " + e);
-  }
-};
-
-const handleSendFolder = async (ip: string) => {
-  const opts: Dialogs.OpenFileDialogOptions = {
-    Title: "Select folder to send",
-    CanChooseDirectories: true,
-    CanChooseFiles: false,
-    AllowsMultipleSelection: false,
-  };
-  const folderPath = await Dialogs.OpenFile(opts);
-  if (!folderPath) return;
-  const peer = await GetPeerByIP(ip);
-  if (!peer) return;
-  activeKey.value = "transfers";
-  await SendFolder(peer, ip, folderPath as string);
-};
-
-const dialog = useDialog();
-const handleSendText = (ip: string) => {
-  const textContent = ref("");
-  const d = dialog.create({
-    title: "Send Text",
-    content: () =>
-      h(NInput, {
-        value: textContent.value,
-        "onUpdate:value": (v) => (textContent.value = v),
-        type: "textarea",
-        placeholder: "Type something to send...",
-        autosize: { minRows: 3, maxRows: 8 },
-      }),
-    positiveText: "Send",
-    negativeText: "Cancel",
-    onPositiveClick: async () => {
-      if (!textContent.value) return;
-      try {
-        const peer = await GetPeerByIP(ip);
-        if (!peer) return;
-        activeKey.value = "transfers";
-        await SendText(peer, ip, textContent.value);
-      } catch (e: any) {
-        console.error(e);
-        alert("Failed to send text: " + e);
-      }
-    },
-  });
-};
-
-const handleSendClipboard = async (ip: string) => {
-  const text = await Clipboard.Text();
-  if (!text) {
-    alert("Clipboard is empty");
-    return;
-  }
-  const peer = await GetPeerByIP(ip);
-  if (!peer) return;
-  activeKey.value = "transfers";
-  await SendText(peer, ip, text);
-};
-
-const removeTransfer = (id: string) => {
-  transferList.value = transferList.value.filter((t) => t.id !== id);
-};
 
 const handleMenuUpdate = (key: string) => {
   activeKey.value = key;
@@ -266,10 +182,7 @@ const handleMenuUpdate = (key: string) => {
               <n-gi v-for="peer in peers" :key="peer.id">
                 <PeerCard
                   :peer="peer"
-                  @sendFile="handleSendFile"
-                  @sendFolder="handleSendFolder"
-                  @sendText="handleSendText"
-                  @sendClipboard="handleSendClipboard" />
+                  @transferStarted="activeKey = 'transfers'" />
               </n-gi>
             </n-grid>
           </n-space>

@@ -101,6 +101,11 @@ export class Transfer {
     "id": string;
 
     /**
+     * 创建时间
+     */
+    "create_time": number;
+
+    /**
      * 发送者
      */
     "sender": Sender;
@@ -160,6 +165,9 @@ export class Transfer {
         if (!("id" in $$source)) {
             this["id"] = "";
         }
+        if (!("create_time" in $$source)) {
+            this["create_time"] = 0;
+        }
         if (!("sender" in $$source)) {
             this["sender"] = (new Sender());
         }
@@ -201,14 +209,14 @@ export class Transfer {
      * Creates a new Transfer instance from a string or object.
      */
     static createFrom($$source: any = {}): Transfer {
-        const $$createField1_0 = $$createType0;
-        const $$createField6_0 = $$createType1;
+        const $$createField2_0 = $$createType0;
+        const $$createField7_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("sender" in $$parsedSource) {
-            $$parsedSource["sender"] = $$createField1_0($$parsedSource["sender"]);
+            $$parsedSource["sender"] = $$createField2_0($$parsedSource["sender"]);
         }
         if ("progress" in $$parsedSource) {
-            $$parsedSource["progress"] = $$createField6_0($$parsedSource["progress"]);
+            $$parsedSource["progress"] = $$createField7_0($$parsedSource["progress"]);
         }
         return new Transfer($$parsedSource as Partial<Transfer>);
     }

@@ -10,10 +10,16 @@ import (
 	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+type FilesDroppedEvent struct {
+	Files  []string `json:"files"`
+	Target string   `json:"target"`
+}
 
 func main() {
 	state := config.LoadWindowState()
@@ -57,13 +63,25 @@ func main() {
 	app.RegisterService(application.NewService(discoveryService))
 	app.RegisterService(application.NewService(transferService))
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:  "mesh drop",
-		Width:  state.Width,
-		Height: state.Height,
-		X:      state.X,
-		Y:      state.Y,
+	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:          "mesh drop",
+		Width:          state.Width,
+		Height:         state.Height,
+		X:              state.X,
+		Y:              state.Y,
+		EnableFileDrop: true,
 	})
+
+	windows.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
+		files := event.Context().DroppedFiles()
+		details := event.Context().DropTargetDetails()
+		app.Event.Emit("files-dropped", FilesDroppedEvent{
+			Files:  files,
+			Target: details.ElementID,
+		})
+	})
+
+	application.RegisterEvent[FilesDroppedEvent]("files-dropped")
 
 	// Initialize structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{

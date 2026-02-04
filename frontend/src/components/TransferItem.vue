@@ -10,6 +10,8 @@ import {
   NTag,
   useMessage,
   NInput,
+  NDropdown,
+  NButtonGroup,
 } from "naive-ui";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -20,12 +22,21 @@ import {
   faFile,
   faFileLines,
   faFolder,
+  faClock,
+  faChevronDown,
+  faEye,
+  faCopy,
+  faTrash,
+  faXmark,
+  faStop,
+  faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
 import {
   ResolvePendingRequest,
   CancelTransfer,
+  DeleteTransfer,
 } from "../../bindings/mesh-drop/internal/transfer/service";
 import { Dialogs, Clipboard } from "@wailsio/runtime";
 
@@ -47,6 +58,10 @@ const formatSize = (bytes?: number) => {
 const formatSpeed = (speed?: number) => {
   if (!speed) return "";
   return formatSize(speed) + "/s";
+};
+
+const formatTime = (time: number): string => {
+  return new Date(time).toLocaleString();
 };
 
 const percentage = computed(() =>
@@ -82,6 +97,23 @@ const acceptToFolder = async () => {
   if (path !== "") {
     ResolvePendingRequest(props.transfer.id, true, path as string);
   }
+};
+
+const dropdownOptions = [
+  {
+    label: "Accept To Folder",
+    key: "folder",
+  },
+];
+
+const handleSelect = (key: string | number) => {
+  if (key === "folder") {
+    acceptToFolder();
+  }
+};
+
+const handleDelete = () => {
+  DeleteTransfer(props.transfer.id);
 };
 
 const message = useMessage();
@@ -126,6 +158,27 @@ const canCancel = computed(() => {
     if (props.transfer.status === "pending") {
       return false;
     }
+    return true;
+  }
+  return false;
+});
+
+const canCopy = computed(() => {
+  if (
+    props.transfer.type === "receive" &&
+    props.transfer.status === "completed" &&
+    props.transfer.content_type === "text"
+  ) {
+    return true;
+  }
+  return false;
+});
+
+const canAccept = computed(() => {
+  if (
+    props.transfer.type === "receive" &&
+    props.transfer.status === "pending"
+  ) {
     return true;
   }
   return false;
@@ -183,13 +236,26 @@ const canCancel = computed(() => {
           <n-tag
             size="small"
             :bordered="false"
-            v-if="props.transfer.sender.name">
+            v-if="
+              props.transfer.sender.name && props.transfer.type === 'receive'
+            ">
             <template #icon>
               <n-icon>
                 <FontAwesomeIcon :icon="faUser" />
               </n-icon>
             </template>
             {{ props.transfer.sender.name }}
+          </n-tag>
+          <n-tag
+            size="small"
+            :bordered="false"
+            v-if="props.transfer.create_time">
+            <template #icon>
+              <n-icon>
+                <FontAwesomeIcon :icon="faClock" />
+              </n-icon>
+            </template>
+            {{ formatTime(props.transfer.create_time) }}
           </n-tag>
         </div>
 
@@ -218,7 +284,7 @@ const canCancel = computed(() => {
             <n-text
               depth="3"
               v-if="props.transfer.status === 'canceled'"
-              type="error">
+              type="info">
               &nbsp;- Canceled</n-text
             >
             <n-text
@@ -227,18 +293,14 @@ const canCancel = computed(() => {
               type="error">
               &nbsp;- Rejected</n-text
             >
+            <n-text
+              depth="3"
+              v-if="props.transfer.status === 'pending'"
+              type="warning">
+              &nbsp;- Waiting for accept</n-text
+            >
           </span>
         </div>
-
-        <!-- 文字内容 -->
-        <n-text
-          v-if="
-            props.transfer.type === 'send' &&
-            props.transfer.status === 'pending'
-          "
-          depth="3"
-          >Waiting for accept</n-text
-        >
 
         <!-- 进度条 -->
         <n-progress
@@ -252,58 +314,83 @@ const canCancel = computed(() => {
           style="margin-top: 4px" />
       </div>
 
-      <!-- 接受/拒绝操作按钮 -->
-      <div
-        class="actions-wrapper"
-        v-if="
-          props.transfer.type === 'receive' &&
-          props.transfer.status === 'pending'
-        ">
+      <!-- 操作按钮 -->
+      <div class="actions-wrapper">
         <n-space>
-          <n-button size="small" type="success" @click="acceptTransfer">
-            Accept
-          </n-button>
-          <n-button
-            v-if="props.transfer.content_type !== 'text'"
-            size="small"
-            type="success"
-            @click="acceptToFolder">
-            Accept To Folder
-          </n-button>
-          <n-button size="small" type="error" ghost @click="rejectTransfer">
-            Reject
-          </n-button>
-        </n-space>
-      </div>
+          <n-button-group size="small">
+            <n-button v-if="canAccept" type="success" @click="acceptTransfer">
+              <template #icon>
+                <n-icon>
+                  <FontAwesomeIcon :icon="faCheck" />
+                </n-icon>
+              </template>
+            </n-button>
+            <n-dropdown
+              trigger="click"
+              :options="dropdownOptions"
+              @select="handleSelect"
+              v-if="canAccept && props.transfer.content_type !== 'text'">
+              <n-button type="success">
+                <template #icon>
+                  <n-icon>
+                    <FontAwesomeIcon :icon="faChevronDown" />
+                  </n-icon>
+                </template>
+              </n-button>
+            </n-dropdown>
+            <n-button
+              v-if="canAccept"
+              size="small"
+              type="error"
+              @click="rejectTransfer">
+              <template #icon>
+                <n-icon>
+                  <FontAwesomeIcon :icon="faXmark" />
+                </n-icon>
+              </template>
+            </n-button>
 
-      <!-- 文本传输按钮 -->
-      <div
-        class="actions-wrapper"
-        v-if="
-          props.transfer.type === 'receive' &&
-          props.transfer.status === 'completed' &&
-          props.transfer.content_type === 'text'
-        ">
-        <n-space>
-          <n-button size="small" type="success" @click="handleOpen"
-            >Open</n-button
-          >
-          <n-button size="small" type="success" @click="handleCopy"
-            >Copy</n-button
-          >
-        </n-space>
-      </div>
-
-      <!-- 取消按钮 -->
-      <div class="actions-wrapper" v-if="canCancel">
-        <n-space>
-          <n-button
-            size="small"
-            type="error"
-            ghost
-            @click="CancelTransfer(props.transfer.id)"
-            >Cancel</n-button
-          >
+            <n-button type="success" @click="handleOpen" v-if="canCopy"
+              ><template #icon>
+                <n-icon>
+                  <FontAwesomeIcon :icon="faEye" />
+                </n-icon>
+              </template>
+            </n-button>
+            <n-button type="success" @click="handleCopy" v-if="canCopy"
+              ><template #icon>
+                <n-icon>
+                  <FontAwesomeIcon :icon="faCopy" />
+                </n-icon>
+              </template>
+            </n-button>
+            <n-button
+              type="success"
+              @click="handleDelete"
+              v-if="
+                props.transfer.status === 'completed' ||
+                props.transfer.status === 'error' ||
+                props.transfer.status === 'canceled' ||
+                props.transfer.status === 'rejected'
+              ">
+              <template #icon>
+                <n-icon>
+                  <FontAwesomeIcon :icon="faTrash" />
+                </n-icon>
+              </template>
+            </n-button>
+            <n-button
+              v-if="canCancel"
+              size="small"
+              type="error"
+              @click="CancelTransfer(props.transfer.id)"
+              ><template #icon>
+                <n-icon>
+                  <FontAwesomeIcon :icon="faStop" />
+                </n-icon>
+              </template>
+            </n-button>
+          </n-button-group>
         </n-space>
       </div>
     </div>
@@ -319,6 +406,7 @@ const canCancel = computed(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .icon-wrapper {
@@ -349,5 +437,18 @@ const canCancel = computed(() => {
   font-size: 12px;
   display: flex;
   align-items: center;
+}
+
+@media (max-width: 640px) {
+  .actions-wrapper {
+    width: 100%;
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .transfer-row {
+    gap: 8px;
+  }
 }
 </style>

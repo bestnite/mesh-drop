@@ -1,5 +1,9 @@
 package transfer
 
+import (
+	"time"
+)
+
 type TransferStatus string
 
 const (
@@ -30,6 +34,7 @@ const (
 // Transfer
 type Transfer struct {
 	ID           string         `json:"id" binding:"required"`     // 传输会话 ID
+	CreateTime   int64          `json:"create_time"`               // 创建时间
 	Sender       Sender         `json:"sender" binding:"required"` // 发送者
 	FileName     string         `json:"file_name"`                 // 文件名
 	FileSize     int64          `json:"file_size"`                 // 文件大小 (字节)
@@ -42,6 +47,77 @@ type Transfer struct {
 	ErrorMsg     string         `json:"error_msg"`                 // 错误信息
 	Token        string         `json:"token"`                     // 用于上传的凭证
 	DecisionChan chan Decision  `json:"-"`                         // 用户决策通道
+}
+
+type TransferOption func(*Transfer)
+
+func NewTransfer(id string, sender Sender, opts ...TransferOption) *Transfer {
+	t := &Transfer{
+		ID:         id,
+		CreateTime: time.Now().UnixMilli(),
+		Sender:     sender,
+		Status:     TransferStatusPending, // Default status
+	}
+
+	for _, opt := range opts {
+		opt(t)
+	}
+
+	return t
+}
+
+func WithFileName(name string) TransferOption {
+	return func(t *Transfer) {
+		t.FileName = name
+	}
+}
+
+func WithFileSize(size int64) TransferOption {
+	return func(t *Transfer) {
+		t.FileSize = size
+	}
+}
+
+func WithSavePath(path string) TransferOption {
+	return func(t *Transfer) {
+		t.SavePath = path
+	}
+}
+
+func WithStatus(status TransferStatus) TransferOption {
+	return func(t *Transfer) {
+		t.Status = status
+	}
+}
+
+func WithType(transType TransferType) TransferOption {
+	return func(t *Transfer) {
+		t.Type = transType
+	}
+}
+
+func WithContentType(contentType ContentType) TransferOption {
+	return func(t *Transfer) {
+		t.ContentType = contentType
+	}
+}
+
+func WithText(text string) TransferOption {
+	return func(t *Transfer) {
+		t.Text = text
+	}
+}
+
+func WithErrorMsg(msg string) TransferOption {
+	return func(t *Transfer) {
+		t.ErrorMsg = msg
+	}
+}
+
+func WithToken(token string) TransferOption {
+	return func(t *Transfer) {
+		t.Token = token
+	}
 }
 
 type Sender struct {
