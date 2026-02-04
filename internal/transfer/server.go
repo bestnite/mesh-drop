@@ -140,7 +140,7 @@ func (s *Service) handleUpload(c *gin.Context) {
 
 	savePath := task.SavePath
 	if savePath == "" {
-		savePath = s.savePath
+		savePath = s.config.GetSavePath()
 	}
 
 	ctxReader := &ContextReader{

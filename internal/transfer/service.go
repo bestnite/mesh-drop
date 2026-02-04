@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"mesh-drop/internal/config"
 	"mesh-drop/internal/discovery"
 	"sync"
 
@@ -12,9 +13,9 @@ import (
 )
 
 type Service struct {
-	app      *application.App
-	port     int
-	savePath string // 默认下载目录
+	config *config.Config
+	app    *application.App
+	port   int
 
 	// pendingRequests 存储等待用户确认的通道
 	// Key: TransferID, Value: *Transfer
@@ -27,14 +28,14 @@ type Service struct {
 	cancelMap sync.Map
 }
 
-func NewService(app *application.App, port int, defaultSavePath string, discoveryService *discovery.Service) *Service {
+func NewService(config *config.Config, app *application.App, port int, discoveryService *discovery.Service) *Service {
 	gin.SetMode(gin.ReleaseMode)
 
 	return &Service{
 		app:              app,
 		port:             port,
-		savePath:         defaultSavePath,
 		discoveryService: discoveryService,
+		config:           config,
 	}
 }
 

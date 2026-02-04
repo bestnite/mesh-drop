@@ -7,7 +7,6 @@ import (
 	"mesh-drop/internal/discovery"
 	"mesh-drop/internal/transfer"
 	"os"
-	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -22,7 +21,7 @@ type FilesDroppedEvent struct {
 }
 
 func main() {
-	state := config.LoadWindowState()
+	conf := config.Load()
 
 	app := application.New(application.Options{
 		Name: "mesh-drop",
@@ -31,19 +30,10 @@ func main() {
 		},
 	})
 
-	// 获取用户目录
-	userHomePath, err := os.UserHomeDir()
-	if err != nil {
-		userHomePath = "/tmp/mesh-drop"
-	}
-
-	// 设置默认保存路径
-	defaultSavePath := filepath.Join(userHomePath, "Downloads")
-
 	// 创建保存路径
-	err = os.MkdirAll(defaultSavePath, 0755)
+	err := os.MkdirAll(conf.SavePath, 0755)
 	if err != nil {
-		slog.Error("Failed to create save path", "path", defaultSavePath, "error", err)
+		slog.Error("Failed to create save path", "path", conf.SavePath, "error", err)
 	}
 
 	// 文件传输端口
@@ -55,24 +45,25 @@ func main() {
 	discoveryService.Start()
 
 	// 初始化传输服务
-	transferService := transfer.NewService(app, port, defaultSavePath, discoveryService)
+	transferService := transfer.NewService(conf, app, port, discoveryService)
 	transferService.Start()
 
 	slog.Info("Backend Service Started", "discovery_port", discovery.DiscoveryPort, "transfer_port", port)
 
 	app.RegisterService(application.NewService(discoveryService))
 	app.RegisterService(application.NewService(transferService))
+	app.RegisterService(application.NewService(conf))
 
-	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:          "mesh drop",
-		Width:          state.Width,
-		Height:         state.Height,
-		X:              state.X,
-		Y:              state.Y,
+		Width:          conf.WindowState.Width,
+		Height:         conf.WindowState.Height,
+		X:              conf.WindowState.X,
+		Y:              conf.WindowState.Y,
 		EnableFileDrop: true,
 	})
 
-	windows.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
+	window.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
 		files := event.Context().DroppedFiles()
 		details := event.Context().DropTargetDetails()
 		app.Event.Emit("files-dropped", FilesDroppedEvent{
@@ -81,9 +72,20 @@ func main() {
 		})
 	})
 
+	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		x, y := window.Position()
+		width, height := window.Size()
+		conf.WindowState = config.WindowState{
+			X:      x,
+			Y:      y,
+			Width:  width,
+			Height: height,
+		}
+		_ = conf.Save()
+	})
+
 	application.RegisterEvent[FilesDroppedEvent]("files-dropped")
 
-	// Initialize structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))

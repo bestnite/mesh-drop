@@ -10,8 +10,6 @@ import {
   NSpace,
   NText,
   NEmpty,
-  NGrid,
-  NGi,
   NMenu,
   NBadge,
   NButton,
@@ -176,15 +174,15 @@ const handleMenuUpdate = (key: string) => {
     <n-layout-content class="content">
       <div class="content-container">
         <!-- 发现页视图 -->
-        <div v-if="activeKey === 'discover'">
+        <div v-show="activeKey === 'discover'">
           <n-space vertical size="large" v-if="peers.length > 0">
-            <n-grid x-gap="16" y-gap="16" cols="1 500:2 700:3">
-              <n-gi v-for="peer in peers" :key="peer.id">
+            <div class="peer-grid">
+              <div v-for="peer in peers" :key="peer.id">
                 <PeerCard
                   :peer="peer"
                   @transferStarted="activeKey = 'transfers'" />
-              </n-gi>
-            </n-grid>
+              </div>
+            </div>
           </n-space>
 
           <div v-else class="empty-state">
@@ -199,7 +197,7 @@ const handleMenuUpdate = (key: string) => {
         </div>
 
         <!-- 传输列表视图 -->
-        <div v-else-if="activeKey === 'transfers'">
+        <div v-show="activeKey === 'transfers'">
           <div v-if="transferList.length > 0">
             <TransferItem
               v-for="transfer in transferList"
@@ -258,6 +256,24 @@ const handleMenuUpdate = (key: string) => {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.peer-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (min-width: 500px) {
+  .peer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 700px) {
+  .peer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>

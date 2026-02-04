@@ -315,7 +315,9 @@ const handleSendFiles = () => {
     </template>
   </n-card>
 
+  <!-- 文件发送 Modal -->
   <n-modal
+    :mask-closable="false"
     v-model:show="showFileModal"
     preset="card"
     title="Send Files"
@@ -375,6 +377,7 @@ const handleSendFiles = () => {
 
   <!-- 文本发送 Modal -->
   <n-modal
+    :mask-closable="false"
     v-model:show="showTextModal"
     preset="card"
     title="Send Text"
