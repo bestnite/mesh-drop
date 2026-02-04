@@ -51,9 +51,10 @@ const showMobileMenu = ref(false);
 const isMobile = ref(false);
 
 // 监听窗口大小变化更新 isMobile
-onMounted(() => {
+onMounted(async () => {
   checkMobile();
   window.addEventListener("resize", checkMobile);
+  transferList.value = await GetTransferList();
 });
 
 const checkMobile = () => {
@@ -83,7 +84,12 @@ const menuOptions = computed<MenuOption[]>(() => [
         [
           "Transfers",
           pendingCount.value > 0 ?
-            h(NBadge, { value: pendingCount.value, max: 99, type: "error" })
+            h(NBadge, {
+              style: "display: inline-flex; align-items: center",
+              value: pendingCount.value,
+              max: 99,
+              type: "error",
+            })
           : null,
         ],
       ),
@@ -124,8 +130,8 @@ const handleSendFile = async (ip: string) => {
     if (!filePath) return;
     const peer = await GetPeerByIP(ip);
     if (!peer) return;
-    await SendFile(peer, ip, filePath);
     activeKey.value = "transfers";
+    await SendFile(peer, ip, filePath);
   } catch (e: any) {
     console.error(e);
     alert("Failed to send file: " + e);
@@ -143,8 +149,8 @@ const handleSendFolder = async (ip: string) => {
   if (!folderPath) return;
   const peer = await GetPeerByIP(ip);
   if (!peer) return;
-  await SendFolder(peer, ip, folderPath as string);
   activeKey.value = "transfers";
+  await SendFolder(peer, ip, folderPath as string);
 };
 
 const dialog = useDialog();
@@ -167,8 +173,8 @@ const handleSendText = (ip: string) => {
       try {
         const peer = await GetPeerByIP(ip);
         if (!peer) return;
-        await SendText(peer, ip, textContent.value);
         activeKey.value = "transfers";
+        await SendText(peer, ip, textContent.value);
       } catch (e: any) {
         console.error(e);
         alert("Failed to send text: " + e);
@@ -185,8 +191,8 @@ const handleSendClipboard = async (ip: string) => {
   }
   const peer = await GetPeerByIP(ip);
   if (!peer) return;
-  await SendText(peer, ip, text);
   activeKey.value = "transfers";
+  await SendText(peer, ip, text);
 };
 
 const removeTransfer = (id: string) => {

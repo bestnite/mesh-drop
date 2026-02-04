@@ -73,6 +73,7 @@ type TransferAskResponse struct {
 
 // TransferUploadResponse 上传回应
 type TransferUploadResponse struct {
-	ID      string `json:"id"` // 传输会话 ID
-	Message string `json:"message"`
+	ID      string         `json:"id"` // 传输会话 ID
+	Message string         `json:"message"`
+	Status  TransferStatus `json:"status"`
 }

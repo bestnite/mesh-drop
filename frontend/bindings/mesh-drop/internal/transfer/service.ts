@@ -13,8 +13,19 @@ import * as discovery$0 from "../discovery/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
+export function CancelTransfer(transferID: string): $CancellablePromise<void> {
+    return $Call.ByID(900002248, transferID);
+}
+
 export function GetPort(): $CancellablePromise<number> {
     return $Call.ByID(4195335736);
+}
+
+export function GetTransfer(transferID: string): $CancellablePromise<[$models.Transfer, boolean]> {
+    return $Call.ByID(1198637268, transferID).then(($result: any) => {
+        $result[0] = $$createType0($result[0]);
+        return $result;
+    });
 }
 
 export function GetTransferList(): $CancellablePromise<$models.Transfer[]> {

@@ -23,7 +23,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
-import { ResolvePendingRequest } from "../../bindings/mesh-drop/internal/transfer/service";
+import {
+  ResolvePendingRequest,
+  CancelTransfer,
+} from "../../bindings/mesh-drop/internal/transfer/service";
 import { Dialogs, Clipboard } from "@wailsio/runtime";
 
 import { useDialog } from "naive-ui";
@@ -106,6 +109,27 @@ const handleOpen = async () => {
       }),
   });
 };
+
+const canCancel = computed(() => {
+  if (
+    props.transfer.status === "completed" ||
+    props.transfer.status === "error" ||
+    props.transfer.status === "canceled" ||
+    props.transfer.status === "rejected"
+  ) {
+    return false;
+  }
+  if (props.transfer.type === "send") {
+    return true;
+  } else if (props.transfer.type === "receive") {
+    // 接收端在 pending 状态只能拒绝不能取消
+    if (props.transfer.status === "pending") {
+      return false;
+    }
+    return true;
+  }
+  return false;
+});
 </script>
 
 <template>
@@ -177,19 +201,31 @@ const handleOpen = async () => {
           <!-- 状态文本（进行中/已完成） -->
           <span>
             <n-text depth="3" v-if="props.transfer.status === 'active'">
-              - {{ formatSpeed(props.transfer.progress.speed) }}</n-text
+              &nbsp;- {{ formatSpeed(props.transfer.progress.speed) }}</n-text
             >
             <n-text
               depth="3"
               v-if="props.transfer.status === 'completed'"
               type="success">
-              - Completed</n-text
+              &nbsp;- Completed</n-text
             >
             <n-text
               depth="3"
               v-if="props.transfer.status === 'error'"
               type="error">
-              - {{ props.transfer.error_msg || "Error" }}</n-text
+              &nbsp;- {{ props.transfer.error_msg || "Error" }}</n-text
+            >
+            <n-text
+              depth="3"
+              v-if="props.transfer.status === 'canceled'"
+              type="error">
+              &nbsp;- Canceled</n-text
+            >
+            <n-text
+              depth="3"
+              v-if="props.transfer.status === 'rejected'"
+              type="error">
+              &nbsp;- Rejected</n-text
             >
           </span>
         </div>
@@ -258,17 +294,16 @@ const handleOpen = async () => {
         </n-space>
       </div>
 
-      <!-- 发送方取消按钮 -->
-      <div
-        class="actions-wrapper"
-        v-if="
-          props.transfer.type === 'send' &&
-          props.transfer.status !== 'completed'
-        ">
+      <!-- 取消按钮 -->
+      <div class="actions-wrapper" v-if="canCancel">
         <n-space>
-          <n-button size="small" type="error" ghost @click="">
-            Cancel
-          </n-button>
+          <n-button
+            size="small"
+            type="error"
+            ghost
+            @click="CancelTransfer(props.transfer.id)"
+            >Cancel</n-button
+          >
         </n-space>
       </div>
     </div>
