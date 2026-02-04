@@ -89,6 +89,10 @@ export function StoreTransferToList(transfer: $models.Transfer | null): $Cancell
     return $Call.ByID(3225941780, transfer);
 }
 
+export function StoreTransfersToList(transfers: ($models.Transfer | null)[]): $CancellablePromise<void> {
+    return $Call.ByID(658746199, transfers);
+}
+
 // Private type creation functions
 const $$createType0 = $models.Transfer.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
