@@ -31,10 +31,6 @@ type Service struct {
 	peersMutex sync.RWMutex
 }
 
-func init() {
-	application.RegisterEvent[[]Peer]("peers:update")
-}
-
 func NewService(config *config.Config, app *application.App, port int) *Service {
 	return &Service{
 		app:            app,

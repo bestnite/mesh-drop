@@ -59,10 +59,6 @@ func NewService(config *config.Config, app *application.App, notifier *notificat
 	}
 }
 
-func init() {
-	application.RegisterEvent[application.Void]("transfer:refreshList")
-}
-
 func (s *Service) GetPort() int {
 	return s.port
 }

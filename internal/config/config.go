@@ -91,6 +91,12 @@ func Load() *Config {
 		}
 	}
 
+	// 确保默认保存路径存在
+	err = os.MkdirAll(defaultSavePath, 0755)
+	if err != nil {
+		slog.Error("Failed to create default save path", "path", defaultSavePath, "error", err)
+	}
+
 	var config Config
 	if err := v.Unmarshal(&config); err != nil {
 		slog.Error("Failed to unmarshal config", "error", err)

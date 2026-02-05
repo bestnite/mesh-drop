@@ -16,6 +16,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed build/appicon.png
+var icon []byte
+
 type FilesDroppedEvent struct {
 	Files  []string `json:"files"`
 	Target string   `json:"target"`
@@ -32,15 +35,10 @@ func main() {
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "com.nite07.mesh-drop",
 		},
+		Icon: icon,
 	})
 
-	// 创建保存路径
-	err := os.MkdirAll(conf.SavePath, 0755)
-	if err != nil {
-		slog.Error("Failed to create save path", "path", conf.SavePath, "error", err)
-	}
-
-	// 通知
+	// 初始化通知服务
 	notifier := notifications.New()
 	authorized, err := notifier.RequestNotificationAuthorization()
 	if err != nil {
@@ -94,7 +92,11 @@ func main() {
 	})
 
 	// 窗口关闭事件
-	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+	// window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+	// })
+
+	// 应用关闭事件
+	app.OnShutdown(func() {
 		x, y := window.Position()
 		width, height := window.Size()
 		conf.SetWindowState(config.WindowState{
@@ -116,13 +118,18 @@ func main() {
 		}
 	})
 
+	// 注册事件
 	application.RegisterEvent[FilesDroppedEvent]("files-dropped")
+	application.RegisterEvent[[]discovery.Peer]("peers:update")
+	application.RegisterEvent[application.Void]("transfer:refreshList")
 
+	// 设置日志
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
 	slog.SetDefault(logger)
 
+	// 运行应用
 	err = app.Run()
 	if err != nil {
 		panic(err)
