@@ -14,7 +14,10 @@ import { Transfer } from "../../bindings/mesh-drop/internal/transfer";
 // --- Service & 后端绑定 ---
 import { Events } from "@wailsio/runtime";
 import { GetPeers } from "../../bindings/mesh-drop/internal/discovery/service";
-import { GetTransferList } from "../../bindings/mesh-drop/internal/transfer/service";
+import {
+  GetTransferList,
+  CleanFinishedTransferList,
+} from "../../bindings/mesh-drop/internal/transfer/service";
 
 // --- 状态 ---
 const peers = ref<Peer[]>([]);
@@ -53,10 +56,7 @@ const menuItems = computed(() => [
 onMounted(async () => {
   checkMobile();
   window.addEventListener("resize", checkMobile);
-  const list = await GetTransferList();
-  transferList.value = (
-    (list || []).filter((t) => t !== null) as Transfer[]
-  ).sort((a, b) => b.create_time - a.create_time);
+  transferList.value = (await GetTransferList()) as Transfer[];
 
   if (isMobile.value) {
     drawer.value = false;
@@ -75,10 +75,7 @@ Events.On("peers:update", (event) => {
 });
 
 Events.On("transfer:refreshList", async () => {
-  const list = await GetTransferList();
-  transferList.value = (
-    (list || []).filter((t) => t !== null) as Transfer[]
-  ).sort((a, b) => b.create_time - a.create_time);
+  transferList.value = (await GetTransferList()) as Transfer[];
 });
 
 // --- 方法 ---
@@ -95,6 +92,10 @@ const handleMenuClick = (key: string) => {
   if (isMobile.value) {
     drawer.value = false;
   }
+};
+
+const handleCleanFinished = async () => {
+  await CleanFinishedTransferList();
 };
 </script>
 
@@ -176,6 +177,16 @@ const handleMenuClick = (key: string) => {
         <!-- 传输视图 -->
         <div v-show="activeKey === 'transfers'">
           <div v-if="transferList.length > 0">
+            <div class="d-flex justify-end mb-2">
+              <v-btn
+                prepend-icon="mdi-delete-sweep"
+                variant="text"
+                color="error"
+                @click="handleCleanFinished"
+              >
+                Clear Finished
+              </v-btn>
+            </div>
             <TransferItem
               v-for="transfer in transferList"
               :key="transfer.id"

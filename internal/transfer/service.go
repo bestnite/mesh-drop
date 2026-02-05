@@ -10,6 +10,7 @@ import (
 	"mesh-drop/internal/security"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -96,8 +97,13 @@ func (s *Service) Start() {
 func (s *Service) GetTransferList() []*Transfer {
 	var requests []*Transfer = make([]*Transfer, 0)
 	s.transferList.Range(func(key, value any) bool {
-		requests = append(requests, value.(*Transfer))
+		transfer := value.(*Transfer)
+		requests = append(requests, transfer)
 		return true
+	})
+	// 按照创建时间降序排序，方便前端展示
+	sort.Slice(requests, func(i, j int) bool {
+		return requests[i].CreateTime-requests[j].CreateTime > 0
 	})
 	return requests
 }
@@ -139,7 +145,7 @@ func (s *Service) NotifyTransferListUpdate() {
 }
 
 // CleanTransferList 清理完成的 transfer
-func (s *Service) CleanTransferList() {
+func (s *Service) CleanFinishedTransferList() {
 	s.transferList.Range(func(key, value any) bool {
 		task := value.(*Transfer)
 		if task.Status == TransferStatusCompleted ||

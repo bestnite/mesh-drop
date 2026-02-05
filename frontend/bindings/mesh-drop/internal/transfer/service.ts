@@ -20,8 +20,8 @@ export function CancelTransfer(transferID: string): $CancellablePromise<void> {
 /**
  * CleanTransferList 清理完成的 transfer
  */
-export function CleanTransferList(): $CancellablePromise<void> {
-    return $Call.ByID(3775121017);
+export function CleanFinishedTransferList(): $CancellablePromise<void> {
+    return $Call.ByID(1852624467);
 }
 
 export function DeleteTransfer(transferID: string): $CancellablePromise<void> {
