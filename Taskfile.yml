@@ -1,17 +1,15 @@
-version: '3'
+version: "3"
 
 includes:
   common: ./build/Taskfile.yml
   windows: ./build/windows/Taskfile.yml
   darwin: ./build/darwin/Taskfile.yml
   linux: ./build/linux/Taskfile.yml
-  ios: ./build/ios/Taskfile.yml
-  android: ./build/android/Taskfile.yml
 
 vars:
   APP_NAME: "mesh-drop"
   BIN_DIR: "bin"
-  VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  VITE_PORT: "{{.WAILS_VITE_PORT | default 9245}}"
 
 tasks:
   build:

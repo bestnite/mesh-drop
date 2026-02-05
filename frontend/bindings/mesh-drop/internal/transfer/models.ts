@@ -70,6 +70,11 @@ export class Sender {
      */
     "name": string;
 
+    /**
+     * 发送者 IP
+     */
+    "ip": string;
+
     /** Creates a new Sender instance. */
     constructor($$source: Partial<Sender> = {}) {
         if (!("id" in $$source)) {
@@ -77,6 +82,9 @@ export class Sender {
         }
         if (!("name" in $$source)) {
             this["name"] = "";
+        }
+        if (!("ip" in $$source)) {
+            this["ip"] = "";
         }
 
         Object.assign(this, $$source);
