@@ -59,6 +59,16 @@ tasks:
       CGO_ENABLED: 1
       GOARCH: "{{.ARCH | default ARCH}}"
 
+  build:prod:
+    summary: Builds the application natively on Linux
+    deps:
+      - task: build
+    cmds:
+      - upx --best --lzma {{.OUTPUT}}
+    vars:
+      DEFAULT_OUTPUT: "{{.BIN_DIR}}/{{.APP_NAME}}"
+      OUTPUT: "{{ .OUTPUT | default .DEFAULT_OUTPUT }}"
+
   build:docker:
     summary: Builds for Linux using Docker (for non-Linux hosts or when no C compiler available)
     internal: true

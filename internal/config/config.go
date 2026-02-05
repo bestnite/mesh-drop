@@ -19,7 +19,7 @@ type WindowState struct {
 	Maximised bool `mapstructure:"maximised"`
 }
 
-const Version = "0.0.1"
+const Version = "0.0.2"
 
 type Config struct {
 	v  *viper.Viper
