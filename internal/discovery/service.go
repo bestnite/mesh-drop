@@ -45,6 +45,70 @@ func NewService(config *config.Config, app *application.App, port int) *Service 
 	}
 }
 
+func (s *Service) GetLocalIPs() ([]string, bool) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		slog.Error("Failed to get network interfaces", "error", err, "component", "discovery")
+		return nil, false
+	}
+	var ips []string
+	for _, iface := range interfaces {
+		// 过滤掉 Down 的接口和 Loopback 接口
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		// 获取该接口的地址
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			ip, _, err := net.ParseCIDR(addr.String())
+			if err != nil {
+				continue
+			}
+			if ip.To4() == nil {
+				continue
+			}
+			ips = append(ips, ip.String())
+		}
+	}
+	return ips, true
+}
+
+func (s *Service) GetLocalIPInSameSubnet(receiverIP string) (string, bool) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		slog.Error("Failed to get network interfaces", "error", err, "component", "discovery")
+		return "", false
+	}
+	for _, iface := range interfaces {
+		// 过滤掉 Down 的接口和 Loopback 接口
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		// 获取该接口的地址
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			ip, ipNet, err := net.ParseCIDR(addr.String())
+			if err != nil {
+				continue
+			}
+			if ip.To4() == nil {
+				continue
+			}
+			if ipNet.Contains(net.ParseIP(receiverIP)) {
+				return ip.String(), true
+			}
+		}
+	}
+	slog.Error("Failed to get local IP in same subnet", "receiverIP", receiverIP, "component", "discovery")
+	return "", false
+}
+
 func (s *Service) startBroadcasting() {
 	ticker := time.NewTicker(HeartbeatRate)
 	for range ticker.C {

@@ -40,7 +40,6 @@ func (s *Service) handleAsk(c *gin.Context) {
 	// 存储请求
 	task.Type = TransferTypeReceive
 	task.Status = TransferStatusPending
-	task.DecisionChan = make(chan Decision)
 	s.StoreTransferToList(&task)
 
 	if s.config.GetAutoAccept() {
@@ -50,10 +49,11 @@ func (s *Service) handleAsk(c *gin.Context) {
 			SavePath: s.config.GetSavePath(),
 		}
 	} else {
+		// 发送系统通知
 		_ = s.notifier.SendNotification(notifications.NotificationOptions{
 			ID:    uuid.New().String(),
 			Title: "File Transfer Request",
-			Body:  fmt.Sprintf("%s wants to transfer %s", task.Sender, task.FileName),
+			Body:  fmt.Sprintf("%s(%s) wants to transfer %s", task.Sender.Name, task.Sender.IP, task.FileName),
 		})
 	}
 

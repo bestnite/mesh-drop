@@ -1,6 +1,8 @@
 package transfer
 
 import (
+	"log/slog"
+	"mesh-drop/internal/discovery"
 	"time"
 )
 
@@ -53,10 +55,11 @@ type TransferOption func(*Transfer)
 
 func NewTransfer(id string, sender Sender, opts ...TransferOption) *Transfer {
 	t := &Transfer{
-		ID:         id,
-		CreateTime: time.Now().UnixMilli(),
-		Sender:     sender,
-		Status:     TransferStatusPending, // Default status
+		ID:           id,
+		CreateTime:   time.Now().UnixMilli(),
+		Sender:       sender,
+		Status:       TransferStatusPending, // Default status
+		DecisionChan: make(chan Decision, 1),
 	}
 
 	for _, opt := range opts {
@@ -123,6 +126,36 @@ func WithToken(token string) TransferOption {
 type Sender struct {
 	ID   string `json:"id" binding:"required"`   // 发送者 ID
 	Name string `json:"name" binding:"required"` // 发送者名称
+	IP   string `json:"ip" binding:"required"`   // 发送者 IP
+}
+
+type NewSenderOption func(*Sender)
+
+func NewSender(id string, name string, opts ...NewSenderOption) Sender {
+	s := &Sender{
+		ID:   id,
+		Name: name,
+	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return *s
+}
+
+func WithIP(ip string) NewSenderOption {
+	return func(s *Sender) {
+		s.IP = ip
+	}
+}
+
+func WithReceiverIP(ip string, discoveryService *discovery.Service) NewSenderOption {
+	return func(s *Sender) {
+		ip, ok := discoveryService.GetLocalIPInSameSubnet(ip)
+		if !ok {
+			slog.Error("Failed to get local IP in same subnet", "ip", ip, "component", "transfer-client")
+		}
+		s.IP = ip
+	}
 }
 
 // Progress 用户前端传输进度
