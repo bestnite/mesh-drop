@@ -40,6 +40,7 @@ func (s *Service) handleAsk(c *gin.Context) {
 	// 存储请求
 	task.Type = TransferTypeReceive
 	task.Status = TransferStatusPending
+	task.DecisionChan = make(chan Decision, 1)
 	s.StoreTransferToList(&task)
 
 	if s.config.GetAutoAccept() {

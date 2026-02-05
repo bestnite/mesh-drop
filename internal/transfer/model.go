@@ -55,11 +55,10 @@ type TransferOption func(*Transfer)
 
 func NewTransfer(id string, sender Sender, opts ...TransferOption) *Transfer {
 	t := &Transfer{
-		ID:           id,
-		CreateTime:   time.Now().UnixMilli(),
-		Sender:       sender,
-		Status:       TransferStatusPending, // Default status
-		DecisionChan: make(chan Decision, 1),
+		ID:         id,
+		CreateTime: time.Now().UnixMilli(),
+		Sender:     sender,
+		Status:     TransferStatusPending, // Default status
 	}
 
 	for _, opt := range opts {

@@ -71,6 +71,11 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 				task.Status = TransferStatusCanceled
 			} else {
 				// 如果请求发送失败，更新状态为 Error
+				if errors.Is(err, io.EOF) {
+					// 接收方离线
+					task.Status = TransferStatusCanceled
+					return
+				}
 				task.Status = TransferStatusError
 				task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
 			}
@@ -125,6 +130,11 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 			task.Status = TransferStatusCanceled
 		} else {
 			// 如果请求发送失败，更新状态为 Error
+			if errors.Is(err, io.EOF) {
+				// 接收方离线
+				task.Status = TransferStatusCanceled
+				return
+			}
 			task.Status = TransferStatusError
 			task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
 		}
@@ -180,6 +190,11 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 				task.Status = TransferStatusCanceled
 			} else {
 				// 如果请求发送失败，更新状态为 Error
+				if errors.Is(err, io.EOF) {
+					// 接收方离线
+					task.Status = TransferStatusCanceled
+					return
+				}
 				task.Status = TransferStatusError
 				task.ErrorMsg = fmt.Sprintf("Failed to connect to receiver: %v", err)
 			}
