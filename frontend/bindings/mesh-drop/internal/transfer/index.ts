@@ -9,7 +9,6 @@ export {
 export {
     ContentType,
     Progress,
-    Sender,
     Transfer,
     TransferStatus,
     TransferType

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
-import { computed, ref } from "vue";
+import { computed, ref, watch, nextTick } from "vue";
 
 // --- Wails & 后端绑定 ---
 import { SendText } from "../../../bindings/mesh-drop/internal/transfer/service";
@@ -20,11 +20,20 @@ const emit = defineEmits<{
 
 // --- 状态 ---
 const textContent = ref("");
+const textareaRef = ref();
 
 // --- 计算属性 ---
 const show = computed({
   get: () => props.modelValue,
   set: (value) => emit("update:modelValue", value),
+});
+
+// --- 监听 ---
+watch(show, async (val) => {
+  if (val) {
+    await nextTick();
+    textareaRef.value?.focus();
+  }
 });
 
 // --- 方法 ---
@@ -48,6 +57,7 @@ const executeSendText = async () => {
     <v-card title="Send Text">
       <v-card-text>
         <v-textarea
+          ref="textareaRef"
           v-model="textContent"
           label="Content"
           placeholder="Type something to send..."

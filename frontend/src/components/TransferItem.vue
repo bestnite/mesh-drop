@@ -187,9 +187,23 @@ const handleCopy = async () => {
               v-if="
                 props.transfer.sender.name && props.transfer.type === 'receive'
               "
-              prepend-icon="mdi-account"
+              :color="
+                props.transfer.sender.trust_mismatch ? 'warning' : undefined
+              "
+              :prepend-icon="
+                props.transfer.sender.trust_mismatch
+                  ? 'mdi-alert'
+                  : 'mdi-account'
+              "
             >
               {{ props.transfer.sender.name }}
+              <v-tooltip
+                v-if="props.transfer.sender.trust_mismatch"
+                activator="parent"
+                location="bottom"
+              >
+                Security Alert: Key Mismatch
+              </v-tooltip>
             </v-chip>
 
             <v-chip

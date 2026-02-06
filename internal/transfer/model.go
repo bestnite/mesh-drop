@@ -1,7 +1,6 @@
 package transfer
 
 import (
-	"log/slog"
 	"mesh-drop/internal/discovery"
 	"time"
 )
@@ -37,7 +36,7 @@ const (
 type Transfer struct {
 	ID           string         `json:"id" binding:"required"`     // 传输会话 ID
 	CreateTime   int64          `json:"create_time"`               // 创建时间
-	Sender       Sender         `json:"sender" binding:"required"` // 发送者
+	Sender       discovery.Peer `json:"sender" binding:"required"` // 发送者
 	FileName     string         `json:"file_name"`                 // 文件名
 	FileSize     int64          `json:"file_size"`                 // 文件大小 (字节)
 	SavePath     string         `json:"savePath"`                  // 保存路径
@@ -53,7 +52,7 @@ type Transfer struct {
 
 type TransferOption func(*Transfer)
 
-func NewTransfer(id string, sender Sender, opts ...TransferOption) *Transfer {
+func NewTransfer(id string, sender discovery.Peer, opts ...TransferOption) *Transfer {
 	t := &Transfer{
 		ID:         id,
 		CreateTime: time.Now().UnixMilli(),
@@ -119,41 +118,6 @@ func WithErrorMsg(msg string) TransferOption {
 func WithToken(token string) TransferOption {
 	return func(t *Transfer) {
 		t.Token = token
-	}
-}
-
-type Sender struct {
-	ID   string `json:"id" binding:"required"`   // 发送者 ID
-	Name string `json:"name" binding:"required"` // 发送者名称
-	IP   string `json:"ip" binding:"required"`   // 发送者 IP
-}
-
-type NewSenderOption func(*Sender)
-
-func NewSender(id string, name string, opts ...NewSenderOption) Sender {
-	s := &Sender{
-		ID:   id,
-		Name: name,
-	}
-	for _, opt := range opts {
-		opt(s)
-	}
-	return *s
-}
-
-func WithIP(ip string) NewSenderOption {
-	return func(s *Sender) {
-		s.IP = ip
-	}
-}
-
-func WithReceiverIP(ip string, discoveryService *discovery.Service) NewSenderOption {
-	return func(s *Sender) {
-		ip, ok := discoveryService.GetLocalIPInSameSubnet(ip)
-		if !ok {
-			slog.Error("Failed to get local IP in same subnet", "ip", ip, "component", "transfer-client")
-		}
-		s.IP = ip
 	}
 }
 

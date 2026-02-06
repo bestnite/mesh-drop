@@ -9,6 +9,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
+export function AddTrustedPeer(peerID: string, publicKey: string): $CancellablePromise<void> {
+    return $Call.ByID(2866399505, peerID, publicKey);
+}
+
 export function GetAutoAccept(): $CancellablePromise<boolean> {
     return $Call.ByID(2605668438);
 }
@@ -29,14 +33,28 @@ export function GetSavePath(): $CancellablePromise<string> {
     return $Call.ByID(4081533263);
 }
 
+export function GetTrustedPeer(): $CancellablePromise<{ [_: string]: string }> {
+    return $Call.ByID(1253442080).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
 export function GetVersion(): $CancellablePromise<string> {
     return $Call.ByID(3578438023);
 }
 
 export function GetWindowState(): $CancellablePromise<$models.WindowState> {
     return $Call.ByID(341414414).then(($result: any) => {
-        return $$createType0($result);
+        return $$createType1($result);
     });
+}
+
+export function IsTrustedPeer(peerID: string): $CancellablePromise<boolean> {
+    return $Call.ByID(3452062706, peerID);
+}
+
+export function RemoveTrustedPeer(peerID: string): $CancellablePromise<void> {
+    return $Call.ByID(909233322, peerID);
 }
 
 /**
@@ -70,4 +88,5 @@ export function SetWindowState(state: $models.WindowState): $CancellablePromise<
 }
 
 // Private type creation functions
-const $$createType0 = $models.WindowState.createFrom;
+const $$createType0 = $Create.Map($Create.Any, $Create.Any);
+const $$createType1 = $models.WindowState.createFrom;

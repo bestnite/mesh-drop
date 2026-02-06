@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"mesh-drop/internal/config"
+	"mesh-drop/internal/security"
 	"net"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 
@@ -15,8 +17,8 @@ import (
 
 const (
 	DiscoveryPort = 9988
-	HeartbeatRate = 3 * time.Second
-	PeerTimeout   = 10 * time.Second
+	HeartbeatRate = 1 * time.Second
+	PeerTimeout   = 2 * time.Second
 )
 
 type Service struct {
@@ -26,9 +28,11 @@ type Service struct {
 	config         *config.Config
 	FileServerPort int
 
-	// key 使用 peer.id 和 peer.ip 组合而成的 hash
+	// Key: peer.ID
 	peers      map[string]*Peer
 	peersMutex sync.RWMutex
+
+	self Peer
 }
 
 func NewService(config *config.Config, app *application.App, port int) *Service {
@@ -38,10 +42,17 @@ func NewService(config *config.Config, app *application.App, port int) *Service 
 		config:         config,
 		FileServerPort: port,
 		peers:          make(map[string]*Peer),
+		self: Peer{
+			ID:        config.GetID(),
+			Name:      config.GetHostName(),
+			Port:      port,
+			OS:        OS(runtime.GOOS),
+			PublicKey: config.PublicKey,
+		},
 	}
 }
 
-func (s *Service) GetLocalIPs() ([]string, bool) {
+func GetLocalIPs() ([]string, bool) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		slog.Error("Failed to get network interfaces", "error", err, "component", "discovery")
@@ -114,11 +125,22 @@ func (s *Service) startBroadcasting() {
 			continue
 		}
 		packet := PresencePacket{
-			ID:   s.ID,
-			Name: s.config.GetHostName(),
-			Port: s.FileServerPort,
-			OS:   OS(runtime.GOOS),
+			ID:        s.ID,
+			Name:      s.config.GetHostName(),
+			Port:      s.FileServerPort,
+			OS:        OS(runtime.GOOS),
+			PublicKey: s.config.PublicKey,
 		}
+
+		// 签名
+		sigData := packet.SignPayload()
+		sig, err := security.Sign(s.config.PrivateKey, sigData)
+		if err != nil {
+			slog.Error("Failed to sign discovery packet", "error", err)
+			continue
+		}
+		packet.Signature = sig
+
 		data, _ := json.Marshal(packet)
 		for _, iface := range interfaces {
 			// 过滤掉 Down 的接口和 Loopback 接口
@@ -195,12 +217,33 @@ func (s *Service) startListening() {
 			continue
 		}
 
-		s.handleHeartbeat(packet, remoteAddr.IP.String())
+		// 验证签名
+		sig := packet.Signature
+		sigData := packet.SignPayload()
+		valid, err := security.Verify(packet.PublicKey, sigData, sig)
+		if err != nil || !valid {
+			slog.Warn("Received invalid discovery packet signature", "id", packet.ID, "ip", remoteAddr.IP.String())
+			continue
+		}
+
+		// 验证身份一致性 (防止 ID 欺骗)
+		trustMismatch := false
+		trustedKeys := s.config.GetTrustedPeer()
+		if knownKey, ok := trustedKeys[packet.ID]; ok {
+			if knownKey != packet.PublicKey {
+				slog.Warn("SECURITY ALERT: Peer ID mismatch with known public key (Spoofing attempt?)", "id", packet.ID, "known_key", knownKey, "received_key", packet.PublicKey)
+				trustMismatch = true
+				// 当发现 ID 欺骗时，不更新 peer，而是标记为 trustMismatch
+				// 用户可以手动重新添加信任
+			}
+		}
+
+		s.handleHeartbeat(packet, remoteAddr.IP.String(), trustMismatch)
 	}
 }
 
 // handleHeartbeat 处理心跳包
-func (s *Service) handleHeartbeat(pkt PresencePacket, ip string) {
+func (s *Service) handleHeartbeat(pkt PresencePacket, ip string, trustMismatch bool) {
 	s.peersMutex.Lock()
 
 	peer, exists := s.peers[pkt.ID]
@@ -215,19 +258,27 @@ func (s *Service) handleHeartbeat(pkt PresencePacket, ip string) {
 					LastSeen: time.Now(),
 				},
 			},
-			Port: pkt.Port,
-			OS:   pkt.OS,
+			Port:          pkt.Port,
+			OS:            pkt.OS,
+			PublicKey:     pkt.PublicKey,
+			TrustMismatch: trustMismatch,
 		}
 		s.peers[peer.ID] = peer
 		slog.Info("New device found", "name", pkt.Name, "ip", ip, "component", "discovery")
 	} else {
 		// 更新节点
-		peer.Name = pkt.Name
-		peer.OS = pkt.OS
+		// 只有在没有身份不匹配的情况下才更新元数据，防止欺骗攻击导致 UI 闪烁/篡改
+		if !trustMismatch {
+			peer.Name = pkt.Name
+			peer.OS = pkt.OS
+			peer.PublicKey = pkt.PublicKey
+		}
 		peer.Routes[ip] = &RouteState{
 			IP:       ip,
 			LastSeen: time.Now(),
 		}
+		// 如果之前存在不匹配，即使这次匹配了，也不要重置，防止欺骗攻击
+		peer.TrustMismatch = peer.TrustMismatch || trustMismatch
 	}
 
 	s.peersMutex.Unlock()
@@ -246,7 +297,6 @@ func (s *Service) startCleanup() {
 
 		for id, peer := range s.peers {
 			for ip, route := range peer.Routes {
-				// 超过10秒没心跳，认为下线
 				if now.Sub(route.LastSeen) > PeerTimeout {
 					delete(peer.Routes, ip)
 					changed = true
@@ -274,16 +324,24 @@ func (s *Service) Start() {
 	go s.startCleanup()
 }
 
-func (s *Service) GetPeerByIP(ip string) *Peer {
+func (s *Service) GetPeerByIP(ip string) (*Peer, bool) {
 	s.peersMutex.RLock()
 	defer s.peersMutex.RUnlock()
 
 	for _, p := range s.peers {
 		if p.Routes[ip] != nil {
-			return p
+			return p, true
 		}
 	}
-	return nil
+	return nil, false
+}
+
+func (s *Service) GetPeerByID(id string) (*Peer, bool) {
+	s.peersMutex.RLock()
+	defer s.peersMutex.RUnlock()
+
+	peer, ok := s.peers[id]
+	return peer, ok
 }
 
 func (s *Service) GetPeers() []Peer {
@@ -294,9 +352,16 @@ func (s *Service) GetPeers() []Peer {
 	for _, p := range s.peers {
 		list = append(list, *p)
 	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Name < list[j].Name
+	})
 	return list
 }
 
 func (s *Service) GetID() string {
 	return s.ID
+}
+
+func (s *Service) GetSelf() Peer {
+	return s.self
 }

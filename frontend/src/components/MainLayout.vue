@@ -66,12 +66,10 @@ onMounted(async () => {
 // --- 后端集成 & 事件监听 ---
 onMounted(async () => {
   peers.value = await GetPeers();
-  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
 });
 
 Events.On("peers:update", (event) => {
   peers.value = event.data;
-  peers.value = peers.value.sort((a, b) => a.name.localeCompare(b.name));
 });
 
 Events.On("transfer:refreshList", async () => {

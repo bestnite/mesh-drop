@@ -5,6 +5,10 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as discovery$0 from "../discovery/models.js";
+
 export enum ContentType {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -59,46 +63,6 @@ export class Progress {
     }
 }
 
-export class Sender {
-    /**
-     * 发送者 ID
-     */
-    "id": string;
-
-    /**
-     * 发送者名称
-     */
-    "name": string;
-
-    /**
-     * 发送者 IP
-     */
-    "ip": string;
-
-    /** Creates a new Sender instance. */
-    constructor($$source: Partial<Sender> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = "";
-        }
-        if (!("name" in $$source)) {
-            this["name"] = "";
-        }
-        if (!("ip" in $$source)) {
-            this["ip"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Sender instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Sender {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new Sender($$parsedSource as Partial<Sender>);
-    }
-}
-
 /**
  * Transfer
  */
@@ -116,7 +80,7 @@ export class Transfer {
     /**
      * 发送者
      */
-    "sender": Sender;
+    "sender": discovery$0.Peer;
 
     /**
      * 文件名
@@ -177,7 +141,7 @@ export class Transfer {
             this["create_time"] = 0;
         }
         if (!("sender" in $$source)) {
-            this["sender"] = (new Sender());
+            this["sender"] = (new discovery$0.Peer());
         }
         if (!("file_name" in $$source)) {
             this["file_name"] = "";
@@ -256,5 +220,5 @@ export enum TransferType {
 };
 
 // Private type creation functions
-const $$createType0 = Sender.createFrom;
+const $$createType0 = discovery$0.Peer.createFrom;
 const $$createType1 = Progress.createFrom;

@@ -43,7 +43,13 @@ func (s *Service) handleAsk(c *gin.Context) {
 	task.DecisionChan = make(chan Decision, 1)
 	s.StoreTransferToList(&task)
 
-	if s.config.GetAutoAccept() {
+	// 从本地获取 peer 检查是否 mismatch
+	peer, ok := s.discoveryService.GetPeerByID(task.Sender.ID)
+	if ok {
+		task.Sender.TrustMismatch = peer.TrustMismatch
+	}
+
+	if s.config.GetAutoAccept() || (s.config.IsTrustedPeer(task.Sender.ID) && !task.Sender.TrustMismatch) {
 		task.DecisionChan <- Decision{
 			ID:       task.ID,
 			Accepted: true,
@@ -54,7 +60,7 @@ func (s *Service) handleAsk(c *gin.Context) {
 		_ = s.notifier.SendNotification(notifications.NotificationOptions{
 			ID:    uuid.New().String(),
 			Title: "File Transfer Request",
-			Body:  fmt.Sprintf("%s(%s) wants to transfer %s", task.Sender.Name, task.Sender.IP, task.FileName),
+			Body:  fmt.Sprintf("%s wants to transfer %s", task.Sender.Name, task.FileName),
 		})
 	}
 
@@ -74,6 +80,11 @@ func (s *Service) handleAsk(c *gin.Context) {
 			})
 		} else {
 			task.Status = TransferStatusRejected
+			c.JSON(http.StatusOK, TransferAskResponse{
+				ID:       task.ID,
+				Accepted: false,
+				Message:  "Transfer rejected",
+			})
 		}
 	case <-c.Request.Context().Done():
 		// 发送端放弃

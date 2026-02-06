@@ -47,6 +47,13 @@ export class Peer {
      */
     "port": number;
     "os": OS;
+    "pk": string;
+
+    /**
+     * TrustMismatch 指示该节点的公钥与本地信任列表中的公钥不匹配
+     * 如果为 true，说明可能存在 ID 欺骗或密钥轮换
+     */
+    "trust_mismatch": boolean;
 
     /** Creates a new Peer instance. */
     constructor($$source: Partial<Peer> = {}) {
@@ -64,6 +71,12 @@ export class Peer {
         }
         if (!("os" in $$source)) {
             this["os"] = OS.$zero;
+        }
+        if (!("pk" in $$source)) {
+            this["pk"] = "";
+        }
+        if (!("trust_mismatch" in $$source)) {
+            this["trust_mismatch"] = false;
         }
 
         Object.assign(this, $$source);

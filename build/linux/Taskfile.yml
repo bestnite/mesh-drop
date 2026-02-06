@@ -21,7 +21,7 @@ tasks:
       # 1. Cross-compiling from non-Linux, OR
       # 2. No C compiler is available, OR
       # 3. Target architecture differs from host architecture (cross-arch compilation)
-      - task: '{{if and (eq OS "linux") (eq .HAS_CC "true") (eq .TARGET_ARCH ARCH)}}{{else}}build:docker{{end}}'
+      - task: '{{if and (eq OS "linux") (eq .HAS_CC "true") (eq .TARGET_ARCH ARCH)}}build:native{{else}}build:docker{{end}}'
         vars:
           ARCH: "{{.ARCH}}"
           DEV: "{{.DEV}}"

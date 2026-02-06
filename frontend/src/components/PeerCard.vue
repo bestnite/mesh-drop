@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted } from "vue";
 
 // --- 组件 ---
 import FileSendModal from "./modals/FileSendModal.vue";
@@ -13,6 +13,20 @@ import {
   SendText,
 } from "../../bindings/mesh-drop/internal/transfer/service";
 import { Peer } from "../../bindings/mesh-drop/internal/discovery/models";
+import {
+  IsTrustedPeer,
+  AddTrustedPeer,
+  RemoveTrustedPeer,
+} from "../../bindings/mesh-drop/internal/config/config";
+
+// --- 生命周期 ---
+onMounted(async () => {
+  try {
+    isTrusted.value = await IsTrustedPeer(props.peer.id);
+  } catch (err) {
+    console.error("Failed to check trusted peer status:", err);
+  }
+});
 
 // --- 属性 & 事件 ---
 const props = defineProps<{
@@ -27,6 +41,7 @@ const emit = defineEmits<{
 const selectedIp = ref<string>("");
 const showFileModal = ref(false);
 const showTextModal = ref(false);
+const isTrusted = ref(false);
 
 const sendOptions = [
   {
@@ -136,10 +151,20 @@ const handleSendClipboard = async () => {
   });
   emit("transferStarted");
 };
+
+const handleTrust = () => {
+  AddTrustedPeer(props.peer.id, props.peer.pk);
+  isTrusted.value = true;
+};
+
+const handleUntrust = () => {
+  RemoveTrustedPeer(props.peer.id);
+  isTrusted.value = false;
+};
 </script>
 
 <template>
-  <v-card hover link class="peer-card pa-2">
+  <v-card hover link class="peer-card pa-2" :ripple="false">
     <template #title>
       <div class="d-flex align-center">
         <v-icon :icon="osIcon" size="24" class="mr-2"></v-icon>
@@ -187,12 +212,25 @@ const handleSendClipboard = async () => {
       </div>
     </template>
 
-    <template #actions>
-      <v-menu>
+    <v-card-actions>
+      <!-- Trust Mismatch Warning -->
+      <v-btn
+        v-if="peer.trust_mismatch"
+        class="flex-grow-1"
+        color="warning"
+        variant="tonal"
+        prepend-icon="mdi-alert"
+        :ripple="false"
+        style="pointer-events: none"
+      >
+        Mismatch
+      </v-btn>
+
+      <v-menu v-else>
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            block
+            class="flex-grow-1"
             color="primary"
             variant="tonal"
             :disabled="ips.length === 0"
@@ -218,7 +256,32 @@ const handleSendClipboard = async () => {
           </v-list-item>
         </v-list>
       </v-menu>
-    </template>
+
+      <!-- Trust Mismatch Reset Override -->
+      <v-btn
+        v-if="peer.trust_mismatch"
+        variant="tonal"
+        color="error"
+        @click="handleUntrust"
+      >
+        <v-icon icon="mdi-delete"></v-icon>
+        <v-tooltip activator="parent" location="bottom">Reset Trust</v-tooltip>
+      </v-btn>
+
+      <v-btn
+        v-else-if="!isTrusted"
+        variant="tonal"
+        color="primary"
+        @click="handleTrust"
+      >
+        <v-icon icon="mdi-star-outline"></v-icon>
+        <v-tooltip activator="parent" location="bottom">Trust peer</v-tooltip>
+      </v-btn>
+      <v-btn v-else variant="tonal" color="primary" @click="handleUntrust">
+        <v-icon icon="mdi-star"></v-icon>
+        <v-tooltip activator="parent" location="bottom">Untrust peer</v-tooltip>
+      </v-btn>
+    </v-card-actions>
   </v-card>
 
   <!-- Modals -->

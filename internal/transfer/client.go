@@ -44,11 +44,7 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 
 	task := NewTransfer(
 		taskID,
-		NewSender(
-			s.discoveryService.GetID(),
-			s.config.GetHostName(),
-			WithReceiverIP(targetIP, s.discoveryService),
-		),
+		s.discoveryService.GetSelf(),
 		WithFileName(filepath.Base(filePath)),
 		WithFileSize(stat.Size()),
 		WithType(TransferTypeSend),
@@ -111,11 +107,7 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 
 	task := NewTransfer(
 		taskID,
-		NewSender(
-			s.discoveryService.GetID(),
-			s.config.GetHostName(),
-			WithReceiverIP(targetIP, s.discoveryService),
-		),
+		s.discoveryService.GetSelf(),
 		WithFileName(filepath.Base(folderPath)),
 		WithFileSize(size),
 		WithType(TransferTypeSend),
@@ -164,11 +156,7 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 	r := bytes.NewReader([]byte(text))
 	task := NewTransfer(
 		taskID,
-		NewSender(
-			s.discoveryService.GetID(),
-			s.config.GetHostName(),
-			WithReceiverIP(targetIP, s.discoveryService),
-		),
+		s.discoveryService.GetSelf(),
 		WithFileSize(int64(len(text))),
 		WithType(TransferTypeSend),
 		WithContentType(ContentTypeText),

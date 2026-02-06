@@ -17,22 +17,29 @@ export function GetLocalIPInSameSubnet(receiverIP: string): $CancellablePromise<
     return $Call.ByID(3089425954, receiverIP);
 }
 
-export function GetLocalIPs(): $CancellablePromise<[string[], boolean]> {
-    return $Call.ByID(2403939179).then(($result: any) => {
-        $result[0] = $$createType0($result[0]);
+export function GetPeerByID(id: string): $CancellablePromise<[$models.Peer | null, boolean]> {
+    return $Call.ByID(1962377788, id).then(($result: any) => {
+        $result[0] = $$createType1($result[0]);
         return $result;
     });
 }
 
-export function GetPeerByIP(ip: string): $CancellablePromise<$models.Peer | null> {
+export function GetPeerByIP(ip: string): $CancellablePromise<[$models.Peer | null, boolean]> {
     return $Call.ByID(1626825408, ip).then(($result: any) => {
-        return $$createType2($result);
+        $result[0] = $$createType1($result[0]);
+        return $result;
     });
 }
 
 export function GetPeers(): $CancellablePromise<$models.Peer[]> {
     return $Call.ByID(3041084029).then(($result: any) => {
-        return $$createType3($result);
+        return $$createType2($result);
+    });
+}
+
+export function GetSelf(): $CancellablePromise<$models.Peer> {
+    return $Call.ByID(3599633538).then(($result: any) => {
+        return $$createType0($result);
     });
 }
 
@@ -41,7 +48,6 @@ export function Start(): $CancellablePromise<void> {
 }
 
 // Private type creation functions
-const $$createType0 = $Create.Array($Create.Any);
-const $$createType1 = $models.Peer.createFrom;
-const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = $Create.Array($$createType1);
+const $$createType0 = $models.Peer.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Array($$createType0);
