@@ -48,7 +48,6 @@ Mesh Drop 采用多层安全设计来保护用户免受潜在的恶意攻击：
 - [x] 自动接收
 - [x] 应用图标
 - [x] 信任Peer
-- [ ] 通过IP添加非局域网Peer
 - [ ] 系统托盘（最小化到托盘）徽章 https://github.com/wailsapp/wails/issues/4494
 - [ ] 多语言
 
