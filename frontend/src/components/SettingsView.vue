@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 // --- Vue 核心 ---
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 // --- Wails & 后端绑定 ---
 import { Dialogs } from "@wailsio/runtime";
@@ -14,7 +15,11 @@ import {
   GetSaveHistory,
   SetSaveHistory,
   GetVersion,
+  GetLanguage,
+  SetLanguage,
+  GetLanguageByString,
 } from "../../bindings/mesh-drop/internal/config/config";
+import { Language } from "bindings/mesh-drop/internal/config";
 
 // --- 状态 ---
 const savePath = ref("");
@@ -23,6 +28,13 @@ const autoAccept = ref(false);
 const saveHistory = ref(false);
 const version = ref("");
 
+const { t, locale } = useI18n();
+
+const languages = [
+  { title: "English", value: "en" },
+  { title: "简体中文", value: "zh-Hans" },
+];
+
 // ---生命周期 ---
 onMounted(async () => {
   savePath.value = await GetSavePath();
@@ -30,6 +42,10 @@ onMounted(async () => {
   autoAccept.value = await GetAutoAccept();
   saveHistory.value = await GetSaveHistory();
   version.value = await GetVersion();
+  let l = await GetLanguage();
+  if (l != "") {
+    locale.value = l;
+  }
 });
 
 // --- 方法 ---
@@ -46,11 +62,16 @@ const changeSavePath = async () => {
     savePath.value = path;
   }
 };
+
+// 监听语言变化
+watch(locale, async (newVal) => {
+  await SetLanguage(newVal as Language);
+});
 </script>
 
 <template>
   <v-list lines="one" bg-color="transparent">
-    <v-list-item title="Save Path" :subtitle="savePath">
+    <v-list-item :title="t('settings.savePath')" :subtitle="savePath">
       <template #prepend>
         <v-icon icon="mdi-folder-download"></v-icon>
       </template>
@@ -61,11 +82,11 @@ const changeSavePath = async () => {
           @click="changeSavePath"
           prepend-icon="mdi-pencil"
         >
-          Change
+          {{ t("settings.change") }}
         </v-btn>
       </template>
     </v-list-item>
-    <v-list-item title="HostName">
+    <v-list-item :title="t('settings.hostName')">
       <template #prepend>
         <v-icon icon="mdi-laptop"></v-icon>
       </template>
@@ -79,7 +100,7 @@ const changeSavePath = async () => {
         ></v-text-field>
       </template>
     </v-list-item>
-    <v-list-item title="Save History">
+    <v-list-item :title="t('settings.saveHistory')">
       <template #prepend>
         <v-icon icon="mdi-history"></v-icon>
       </template>
@@ -93,7 +114,7 @@ const changeSavePath = async () => {
         ></v-switch>
       </template>
     </v-list-item>
-    <v-list-item title="Auto Accept">
+    <v-list-item :title="t('settings.autoAccept')">
       <template #prepend>
         <v-icon icon="mdi-content-save"></v-icon>
       </template>
@@ -107,12 +128,28 @@ const changeSavePath = async () => {
         ></v-switch>
       </template>
     </v-list-item>
-    <v-list-item title="Version">
+    <v-list-item :title="t('settings.version')">
       <template #prepend>
         <v-icon icon="mdi-information"></v-icon>
       </template>
       <template #append>
         <div class="text-grey">{{ version }}</div>
+      </template>
+    </v-list-item>
+
+    <v-list-item :title="t('settings.language')">
+      <template #prepend>
+        <v-icon icon="mdi-translate"></v-icon>
+      </template>
+      <template #append>
+        <v-select
+          v-model="locale"
+          :items="languages"
+          variant="underlined"
+          density="compact"
+          hide-details
+          width="150"
+        ></v-select>
       </template>
     </v-list-item>
   </v-list>

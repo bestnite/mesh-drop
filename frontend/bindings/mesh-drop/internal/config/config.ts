@@ -25,6 +25,14 @@ export function GetID(): $CancellablePromise<string> {
     return $Call.ByID(4240411568);
 }
 
+export function GetLanguage(): $CancellablePromise<$models.Language> {
+    return $Call.ByID(480133131);
+}
+
+export function GetLanguageByString(str: string): $CancellablePromise<$models.Language> {
+    return $Call.ByID(905794983, str);
+}
+
 export function GetSaveHistory(): $CancellablePromise<boolean> {
     return $Call.ByID(2178923392);
 }
@@ -70,6 +78,10 @@ export function SetAutoAccept(autoAccept: boolean): $CancellablePromise<void> {
 
 export function SetHostName(hostName: string): $CancellablePromise<void> {
     return $Call.ByID(1580131496, hostName);
+}
+
+export function SetLanguage(language: $models.Language): $CancellablePromise<void> {
+    return $Call.ByID(933959199, language);
 }
 
 export function SetSaveHistory(saveHistory: boolean): $CancellablePromise<void> {

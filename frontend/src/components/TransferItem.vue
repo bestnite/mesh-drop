@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 // --- Wails & 后端绑定 ---
 import { Dialogs, Clipboard } from "@wailsio/runtime";
@@ -15,6 +16,8 @@ import {
 const props = defineProps<{
   transfer: Transfer;
 }>();
+
+const { t } = useI18n();
 
 // --- 状态 ---
 const showContentDialog = ref(false);
@@ -106,7 +109,7 @@ const rejectTransfer = () => {
 
 const acceptToFolder = async () => {
   const opts: Dialogs.OpenFileDialogOptions = {
-    Title: "Select Folder to save the file",
+    Title: t("transfers.selectSavePath"),
     CanChooseDirectories: true,
     CanChooseFiles: false,
     AllowsMultipleSelection: false,
@@ -178,7 +181,9 @@ const handleCopy = async () => {
               ></v-icon>
               {{
                 props.transfer.file_name ||
-                (props.transfer.content_type === "text" ? "Text" : "Folder")
+                (props.transfer.content_type === "text"
+                  ? t("transfers.text")
+                  : t("transfers.folder"))
               }}
             </div>
 
@@ -202,7 +207,7 @@ const handleCopy = async () => {
                 activator="parent"
                 location="bottom"
               >
-                Security Alert: Key Mismatch
+                {{ t("transfers.securityAlert") }}
               </v-tooltip>
             </v-chip>
 
@@ -226,25 +231,25 @@ const handleCopy = async () => {
               v-if="props.transfer.status === 'completed'"
               class="text-success"
             >
-              &nbsp;- Completed
+              &nbsp;- {{ t("transfers.completed") }}
             </span>
             <span v-if="props.transfer.status === 'error'" class="text-error">
-              &nbsp;- {{ props.transfer.error_msg || "Error" }}
+              &nbsp;- {{ props.transfer.error_msg || t("common.error") }}
             </span>
             <span v-if="props.transfer.status === 'canceled'" class="text-info">
-              &nbsp;- Canceled
+              &nbsp;- {{ t("transfers.cancelled") }}
             </span>
             <span
               v-if="props.transfer.status === 'rejected'"
               class="text-error"
             >
-              &nbsp;- Rejected
+              &nbsp;- {{ t("transfers.rejected") }}
             </span>
             <span
               v-if="props.transfer.status === 'pending'"
               class="text-warning"
             >
-              &nbsp;- Waiting for accept
+              &nbsp;- {{ t("transfers.waitingForAccept") }}
             </span>
           </div>
 
@@ -264,7 +269,9 @@ const handleCopy = async () => {
           <v-btn-group density="compact" variant="tonal" divided rounded="xl">
             <v-btn v-if="canAccept" color="success" @click="acceptTransfer">
               <v-icon icon="mdi-content-save"></v-icon>
-              <v-tooltip activator="parent" location="bottom">Accept</v-tooltip>
+              <v-tooltip activator="parent" location="bottom">{{
+                t("common.accept")
+              }}</v-tooltip>
             </v-btn>
 
             <v-btn
@@ -274,13 +281,15 @@ const handleCopy = async () => {
             >
               <v-icon icon="mdi-folder-arrow-right"></v-icon>
               <v-tooltip activator="parent" location="bottom">
-                Save to Folder
+                {{ t("transfers.saveToFolder") }}
               </v-tooltip>
             </v-btn>
 
             <v-btn v-if="canAccept" color="error" @click="rejectTransfer">
               <v-icon icon="mdi-close"></v-icon>
-              <v-tooltip activator="parent" location="bottom">Reject</v-tooltip>
+              <v-tooltip activator="parent" location="bottom">{{
+                t("common.reject")
+              }}</v-tooltip>
             </v-btn>
 
             <v-btn
@@ -290,13 +299,15 @@ const handleCopy = async () => {
             >
               <v-icon icon="mdi-eye"></v-icon>
               <v-tooltip activator="parent" location="bottom">
-                View Content
+                {{ t("transfers.viewContent") }}
               </v-tooltip>
             </v-btn>
 
             <v-btn v-if="canCopy" color="success" @click="handleCopy">
               <v-icon icon="mdi-content-copy"></v-icon>
-              <v-tooltip activator="parent" location="bottom">Copy</v-tooltip>
+              <v-tooltip activator="parent" location="bottom">{{
+                t("common.copy")
+              }}</v-tooltip>
             </v-btn>
 
             <v-btn
@@ -310,7 +321,9 @@ const handleCopy = async () => {
               @click="handleDelete"
             >
               <v-icon icon="mdi-delete"></v-icon>
-              <v-tooltip activator="parent" location="bottom">Delete</v-tooltip>
+              <v-tooltip activator="parent" location="bottom">{{
+                t("common.delete")
+              }}</v-tooltip>
             </v-btn>
 
             <v-btn
@@ -319,7 +332,9 @@ const handleCopy = async () => {
               @click="CancelTransfer(props.transfer.id)"
             >
               <v-icon icon="mdi-stop"></v-icon>
-              <v-tooltip activator="parent" location="bottom">Cancel</v-tooltip>
+              <v-tooltip activator="parent" location="bottom">{{
+                t("common.cancel")
+              }}</v-tooltip>
             </v-btn>
           </v-btn-group>
         </div>
@@ -328,7 +343,7 @@ const handleCopy = async () => {
   </v-card>
 
   <v-dialog v-model="showContentDialog" width="600">
-    <v-card title="Text Content">
+    <v-card :title="t('transfers.textContent')">
       <v-card-text>
         <v-textarea
           :model-value="props.transfer.text"

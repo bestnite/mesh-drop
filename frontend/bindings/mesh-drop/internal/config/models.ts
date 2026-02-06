@@ -5,6 +5,16 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+export enum Language {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LanguageEnglish = "en",
+    LanguageChinese = "zh-Hans",
+};
+
 /**
  * WindowState 定义窗口状态
  */

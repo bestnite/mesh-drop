@@ -22,6 +22,13 @@ type WindowState struct {
 
 var Version = "next"
 
+type Language string
+
+const (
+	LanguageEnglish Language = "en"
+	LanguageChinese Language = "zh-Hans"
+)
+
 type Config struct {
 	v  *viper.Viper
 	mu sync.RWMutex
@@ -35,6 +42,8 @@ type Config struct {
 	AutoAccept  bool              `mapstructure:"auto_accept"`
 	SaveHistory bool              `mapstructure:"save_history"`
 	TrustedPeer map[string]string `mapstructure:"trusted_peer"` // ID -> PublicKey
+
+	Language Language `mapstructure:"language"`
 }
 
 // 默认窗口配置
@@ -275,4 +284,29 @@ func (c *Config) IsTrustedPeer(peerID string) bool {
 	defer c.mu.RUnlock()
 	_, exists := c.TrustedPeer[peerID]
 	return exists
+}
+
+func (c *Config) SetLanguage(language Language) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Language = language
+	c.v.Set("language", language)
+	_ = c.save()
+}
+
+func (c *Config) GetLanguage() Language {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.Language
+}
+
+func (c *Config) GetLanguageByString(str string) Language {
+	switch str {
+	case string(LanguageEnglish):
+		return LanguageEnglish
+	case string(LanguageChinese):
+		return LanguageChinese
+	default:
+		return LanguageEnglish
+	}
 }

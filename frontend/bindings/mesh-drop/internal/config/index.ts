@@ -7,5 +7,6 @@ export {
 };
 
 export {
+    Language,
     WindowState
 } from "./models.js";

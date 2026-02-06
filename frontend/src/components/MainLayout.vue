@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 // --- Vue 核心 ---
 import { onMounted, ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
 
 // --- 组件 ---
 import PeerCard from "./PeerCard.vue";
@@ -25,6 +26,7 @@ const transferList = ref<Transfer[]>([]);
 const activeKey = ref("discover");
 const drawer = ref(true);
 const isMobile = ref(false);
+const { t } = useI18n();
 
 // --- 计算属性 ---
 const pendingCount = computed(() => {
@@ -35,18 +37,18 @@ const pendingCount = computed(() => {
 
 const menuItems = computed(() => [
   {
-    title: "Discover",
+    title: t("menu.discover"),
     value: "discover",
     icon: "mdi-radar",
   },
   {
-    title: "Transfers",
+    title: t("menu.transfers"),
     value: "transfers",
     icon: "mdi-inbox",
     badge: pendingCount.value > 0 ? pendingCount.value : null,
   },
   {
-    title: "Settings",
+    title: t("menu.settings"),
     value: "settings",
     icon: "mdi-cog",
   },
@@ -168,7 +170,7 @@ const handleCleanFinished = async () => {
               class="mb-4 radar-icon"
               style="opacity: 0.5"
             ></v-icon>
-            <div class="text-grey">Scanning for peers...</div>
+            <div class="text-grey">{{ t("discover.scanning") }}</div>
           </div>
         </div>
 
@@ -182,7 +184,7 @@ const handleCleanFinished = async () => {
                 color="error"
                 @click="handleCleanFinished"
               >
-                Clear Finished
+                {{ t("transfers.clearFinished") }}
               </v-btn>
             </div>
             <TransferItem
@@ -196,7 +198,7 @@ const handleCleanFinished = async () => {
             class="empty-state d-flex flex-column justify-center align-center"
           >
             <v-icon icon="mdi-inbox" size="100" class="mb-4 text-grey"></v-icon>
-            <div class="text-grey">No transfers yet</div>
+            <div class="text-grey">{{ t("transfers.noTransfers") }}</div>
           </div>
         </div>
 

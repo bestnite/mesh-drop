@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
 import { computed, ref, watch, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 
 // --- 组件 ---
 import FileSendModal from "./modals/FileSendModal.vue";
@@ -33,6 +34,8 @@ const props = defineProps<{
   peer: Peer;
 }>();
 
+const { t } = useI18n();
+
 const emit = defineEmits<{
   (e: "transferStarted"): void;
 }>();
@@ -43,28 +46,28 @@ const showFileModal = ref(false);
 const showTextModal = ref(false);
 const isTrusted = ref(false);
 
-const sendOptions = [
+const sendOptions = computed(() => [
   {
-    title: "Send Files",
+    title: t("discover.sendFiles"),
     value: "files",
     icon: "mdi-file",
   },
   {
-    title: "Send Folder",
+    title: t("discover.sendFolder"),
     value: "folder",
     icon: "mdi-folder",
   },
   {
-    title: "Send Text",
+    title: t("discover.sendText"),
     value: "text",
     icon: "mdi-format-font",
   },
   {
-    title: "Send Clipboard",
+    title: t("discover.sendClipboard"),
     value: "clipboard",
     icon: "mdi-clipboard",
   },
-];
+]);
 
 // --- 计算属性 ---
 const ips = computed(() => {
@@ -123,7 +126,7 @@ const handleAction = (key: string) => {
 const handleSendFolder = async () => {
   if (!selectedIp.value) return;
   const opts: Dialogs.OpenFileDialogOptions = {
-    Title: "Select folder to send",
+    Title: t("discover.selectFolder"),
     CanChooseDirectories: true,
     CanChooseFiles: false,
     AllowsMultipleSelection: false,
@@ -142,7 +145,7 @@ const handleSendClipboard = async () => {
   if (!selectedIp.value) return;
   const text = await Clipboard.Text();
   if (!text) {
-    alert("Clipboard is empty");
+    alert(t("discover.clipboardEmpty"));
     return;
   }
   SendText(props.peer, selectedIp.value, text).catch((e) => {
@@ -208,7 +211,9 @@ const handleUntrust = () => {
         </v-menu>
 
         <!-- No Route -->
-        <v-chip v-else color="warning" size="small" label> No Route </v-chip>
+        <v-chip v-else color="warning" size="small" label>
+          {{ t("discover.noRoute") }}
+        </v-chip>
       </div>
     </template>
 
@@ -223,7 +228,7 @@ const handleUntrust = () => {
         :ripple="false"
         style="pointer-events: none"
       >
-        Mismatch
+        {{ t("discover.mismatch") }}
       </v-btn>
 
       <v-menu v-else>
@@ -239,7 +244,7 @@ const handleUntrust = () => {
             <template #prepend>
               <v-icon icon="mdi-send"></v-icon>
             </template>
-            Send
+            {{ t("discover.send") }}
           </v-btn>
         </template>
         <v-list>
@@ -265,7 +270,9 @@ const handleUntrust = () => {
         @click="handleUntrust"
       >
         <v-icon icon="mdi-delete"></v-icon>
-        <v-tooltip activator="parent" location="bottom">Reset Trust</v-tooltip>
+        <v-tooltip activator="parent" location="bottom">{{
+          t("discover.resetTrust")
+        }}</v-tooltip>
       </v-btn>
 
       <v-btn
@@ -275,11 +282,15 @@ const handleUntrust = () => {
         @click="handleTrust"
       >
         <v-icon icon="mdi-star-outline"></v-icon>
-        <v-tooltip activator="parent" location="bottom">Trust peer</v-tooltip>
+        <v-tooltip activator="parent" location="bottom">{{
+          t("discover.trustPeer")
+        }}</v-tooltip>
       </v-btn>
       <v-btn v-else variant="tonal" color="primary" @click="handleUntrust">
         <v-icon icon="mdi-star"></v-icon>
-        <v-tooltip activator="parent" location="bottom">Untrust peer</v-tooltip>
+        <v-tooltip activator="parent" location="bottom">{{
+          t("discover.untrustPeer")
+        }}</v-tooltip>
       </v-btn>
     </v-card-actions>
   </v-card>
