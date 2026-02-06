@@ -1,0 +1,98 @@
+version: 2
+
+project_name: mesh-drop
+
+before:
+  hooks:
+    - go mod tidy
+    - wails3 generate bindings -ts
+    - sh -c 'cd frontend && npm run build'
+    - wails3 generate .desktop -name "{{.ProjectName}}" -exec "{{.ProjectName}}" -icon "{{.ProjectName}}.png" -outputfile "goreleaser/{{.ProjectName}}.desktop" -categories "Network;FileTransfer;" -keywords "mesh,transfer,file,network,drop"
+
+builds:
+  - id: linux-amd64
+    binary: mesh-drop
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags
+      - production
+      - -trimpath
+    ldflags:
+      - -s -w -X mesh-drop/internal/config.Version={{ .Version }}
+
+  - id: windows-amd64
+    binary: mesh-drop
+    goos:
+      - windows
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags
+      - production
+      - -trimpath
+    ldflags:
+      - -s -w -H windowsgui -X mesh-drop/internal/config.Version={{ .Version }}
+    hooks:
+      pre:
+        - "wails3 generate icons -input goreleaser/icon.png -windowsfilename goreleaser/icon.ico"
+        - "wails3 generate syso -arch amd64 -icon goreleaser/icon.ico -manifest goreleaser/wails.exe.manifest -info goreleaser/info.json -out goreleaser/wails_windows_amd64.syso"
+      post: "rm -f goreleaser/wails_windows_amd64.syso"
+
+archives:
+  - formats: ["tar.gz"]
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+
+nfpms:
+  - id: default
+    package_name: mesh-drop
+    vendor: "nite"
+    homepage: "https://www.nite07.com"
+    maintainer: "Nite <nite@nite07.com>"
+    description: "A mesh-drop application"
+    license: "MIT"
+    formats:
+      - deb
+      - rpm
+      - archlinux
+
+    contents:
+      - src: "goreleaser/icon.png"
+        dst: "/usr/share/icons/hicolor/128x128/apps/mesh-drop.png"
+      - src: "build/linux/mesh-drop.desktop"
+        dst: "/usr/share/applications/mesh-drop.desktop"
+
+    dependencies:
+      - libgtk-3-0
+      - libwebkit2gtk-4.1-0
+
+    overrides:
+      rpm:
+        dependencies:
+          - gtk3
+          - webkit2gtk4.1
+      archlinux:
+        dependencies:
+          - gtk3
+          - webkit2gtk-4.1
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ .Tag }}-{{ .ShortCommit }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

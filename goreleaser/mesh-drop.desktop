@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=mesh-drop
+Exec=mesh-drop
+Icon=mesh-drop.png
+Categories=Network;FileTransfer;
+Terminal=false
+Keywords=mesh,transfer,file,network,drop
+Version=1.0
+StartupNotify=false

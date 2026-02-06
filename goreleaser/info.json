@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "Nite",
+			"FileDescription": "A mesh-drop application",
+			"LegalCopyright": "© 2026, Nite",
+			"ProductName": "Nite",
+			"Comments": "A mesh-drop application"
+		}
+	}
+}
