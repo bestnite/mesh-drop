@@ -88,6 +88,10 @@ const osIcon = computed(() => {
   }
 });
 
+const showMismatch = computed(() => {
+  return props.peer.trust_mismatch && isTrusted.value;
+});
+
 // --- 监听 ---
 watch(
   ips,
@@ -163,8 +167,6 @@ const handleTrust = () => {
 const handleUntrust = () => {
   RemoveTrust(props.peer.id);
   isTrusted.value = false;
-
-  props.peer.trust_mismatch = false;
 };
 </script>
 
@@ -222,7 +224,7 @@ const handleUntrust = () => {
     <v-card-actions>
       <!-- Trust Mismatch Warning -->
       <v-btn
-        v-if="peer.trust_mismatch"
+        v-if="showMismatch"
         class="flex-grow-1"
         color="warning"
         variant="tonal"
@@ -266,7 +268,7 @@ const handleUntrust = () => {
 
       <!-- Trust Mismatch Reset Override -->
       <v-btn
-        v-if="peer.trust_mismatch"
+        v-if="showMismatch"
         variant="tonal"
         color="error"
         @click="handleUntrust"
