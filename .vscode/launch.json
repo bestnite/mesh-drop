@@ -10,10 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": [
-                "-tags",
-                "gtk4"
-            ],
+            "buildFlags": "-tags=gtk4",
             "preLaunchTask": "build frontend"
         }
     ]

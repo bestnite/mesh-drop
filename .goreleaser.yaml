@@ -42,8 +42,8 @@ builds:
     hooks:
       pre:
         - "wails3 generate icons -input goreleaser/icon.png -windowsfilename goreleaser/icon.ico"
-        - "wails3 generate syso -arch amd64 -icon goreleaser/icon.ico -manifest goreleaser/wails.exe.manifest -info goreleaser/info.json -out goreleaser/wails_windows_amd64.syso"
-      post: "rm -f goreleaser/wails_windows_amd64.syso"
+        - "wails3 generate syso -arch amd64 -icon goreleaser/icon.ico -manifest goreleaser/wails.exe.manifest -info goreleaser/info.json -out wails_windows_amd64.syso"
+      post: "rm -f wails_windows_amd64.syso"
 
 archives:
   - formats: ["tar.gz"]

@@ -175,6 +175,14 @@ func (s *Service) handleUpload(c *gin.Context) {
 	switch task.ContentType {
 	case ContentTypeFile:
 		destPath := filepath.Join(savePath, task.FileName)
+		// 如果文件已存在则在文件名后追加序号
+		_, err := os.Stat(destPath)
+		counter := 1
+		for err == nil {
+			destPath = filepath.Join(savePath, fmt.Sprintf("%s (%d)%s", strings.TrimSuffix(task.FileName, filepath.Ext(task.FileName)), counter, filepath.Ext(task.FileName)))
+			counter++
+			_, err = os.Stat(destPath)
+		}
 		file, err := os.Create(destPath)
 		if err != nil {
 			// 接收方无法创建文件，直接报错，任务结束
@@ -189,17 +197,17 @@ func (s *Service) handleUpload(c *gin.Context) {
 			return
 		}
 		defer file.Close()
-		s.receive(c, task, file, ctxReader)
+		s.receive(c, task, Writer{w: file, filePath: destPath}, ctxReader)
 	case ContentTypeText:
 		var buf bytes.Buffer
-		s.receive(c, task, &buf, ctxReader)
+		s.receive(c, task, Writer{w: &buf, filePath: ""}, ctxReader)
 		task.Text = buf.String()
 	case ContentTypeFolder:
 		s.receiveFolder(c, savePath, task, ctxReader)
 	}
 }
 
-func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer, ctxReader io.Reader) {
+func (s *Service) receive(c *gin.Context, task *Transfer, writer Writer, ctxReader io.Reader) {
 	// 包装 reader，用于计算进度
 	reader := &PassThroughReader{
 		Reader: ctxReader,
@@ -248,6 +256,11 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer io.Writer, ctxR
 		slog.Error("Failed to write file", "error", err, "component", "transfer")
 		task.Status = TransferStatusError
 		task.ErrorMsg = fmt.Errorf("failed to write file: %v", err).Error()
+
+		// 删除文件
+		if task.ContentType == ContentTypeFile && writer.GetFilePath() != "" {
+			_ = os.Remove(writer.GetFilePath())
+		}
 		return
 	}
 
@@ -265,6 +278,14 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 
 	// 创建根目录
 	destPath := filepath.Join(savePath, task.FileName)
+	// 如果文件已存在则在文件名后追加序号
+	_, err := os.Stat(destPath)
+	counter := 1
+	for err == nil {
+		destPath = filepath.Join(savePath, fmt.Sprintf("%s (%d)", task.FileName, counter))
+		counter++
+		_, err = os.Stat(destPath)
+	}
 	if err := os.MkdirAll(destPath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, TransferUploadResponse{
 			ID:      task.ID,

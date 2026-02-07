@@ -34,20 +34,21 @@ const (
 
 // Transfer
 type Transfer struct {
-	ID           string         `json:"id" binding:"required"`     // 传输会话 ID
-	CreateTime   int64          `json:"create_time"`               // 创建时间
-	Sender       discovery.Peer `json:"sender" binding:"required"` // 发送者
-	FileName     string         `json:"file_name"`                 // 文件名
-	FileSize     int64          `json:"file_size"`                 // 文件大小 (字节)
-	SavePath     string         `json:"savePath"`                  // 保存路径
-	Status       TransferStatus `json:"status"`                    // 传输状态
-	Progress     Progress       `json:"progress"`                  // 传输进度
-	Type         TransferType   `json:"type"`                      // 进度类型
-	ContentType  ContentType    `json:"content_type"`              // 内容类型
-	Text         string         `json:"text"`                      // 文本内容
-	ErrorMsg     string         `json:"error_msg"`                 // 错误信息
-	Token        string         `json:"token"`                     // 用于上传的凭证
-	DecisionChan chan Decision  `json:"-"`                         // 用户决策通道
+	ID         string         `json:"id" binding:"required"`     // 传输会话 ID
+	CreateTime int64          `json:"create_time"`               // 创建时间
+	Sender     discovery.Peer `json:"sender" binding:"required"` // 发送者
+	// FileName 如果 ContentType 为 file，文件名；如果 ContentType 为 folder，文件夹名；如果 ContentType 为 text，空
+	FileName     string         `json:"file_name"`    // 文件名
+	FileSize     int64          `json:"file_size"`    // 文件大小 (字节)
+	SavePath     string         `json:"savePath"`     // 保存路径
+	Status       TransferStatus `json:"status"`       // 传输状态
+	Progress     Progress       `json:"progress"`     // 传输进度
+	Type         TransferType   `json:"type"`         // 进度类型
+	ContentType  ContentType    `json:"content_type"` // 内容类型
+	Text         string         `json:"text"`         // 文本内容
+	ErrorMsg     string         `json:"error_msg"`    // 错误信息
+	Token        string         `json:"token"`        // 用于上传的凭证
+	DecisionChan chan Decision  `json:"-"`            // 用户决策通道
 }
 
 type TransferOption func(*Transfer)

@@ -21,9 +21,6 @@ export enum Language {
 export class WindowState {
     "Width": number;
     "Height": number;
-    "X": number;
-    "Y": number;
-    "Maximised": boolean;
 
     /** Creates a new WindowState instance. */
     constructor($$source: Partial<WindowState> = {}) {
@@ -32,15 +29,6 @@ export class WindowState {
         }
         if (!("Height" in $$source)) {
             this["Height"] = 0;
-        }
-        if (!("X" in $$source)) {
-            this["X"] = 0;
-        }
-        if (!("Y" in $$source)) {
-            this["Y"] = 0;
-        }
-        if (!("Maximised" in $$source)) {
-            this["Maximised"] = false;
         }
 
         Object.assign(this, $$source);

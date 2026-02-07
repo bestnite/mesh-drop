@@ -8,11 +8,10 @@ import (
 	"path/filepath"
 )
 
-func (s *Service) SaveHistory() {
+func (s *Service) SaveHistory(transfers []*Transfer) {
 	if !s.config.GetSaveHistory() {
 		return
 	}
-	transfers := s.GetTransferList()
 	configDir := config.GetConfigDir()
 	historyPath := filepath.Join(configDir, "history.json")
 	historyJson, err := json.Marshal(transfers)

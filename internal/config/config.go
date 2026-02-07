@@ -13,11 +13,8 @@ import (
 
 // WindowState 定义窗口状态
 type WindowState struct {
-	Width     int  `mapstructure:"width"`
-	Height    int  `mapstructure:"height"`
-	X         int  `mapstructure:"x"`
-	Y         int  `mapstructure:"y"`
-	Maximised bool `mapstructure:"maximised"`
+	Width  int `mapstructure:"width"`
+	Height int `mapstructure:"height"`
 }
 
 var Version = "next"
@@ -50,14 +47,6 @@ type Config struct {
 	data configData
 }
 
-// 默认窗口配置
-var defaultWindowState = WindowState{
-	Width:  1024,
-	Height: 768,
-	X:      -1,
-	Y:      -1,
-}
-
 func GetConfigDir() string {
 	configPath, err := os.UserConfigDir()
 	if err != nil {
@@ -75,7 +64,7 @@ func GetUserHomeDir() string {
 }
 
 // New 读取配置
-func Load() *Config {
+func Load(defaultState WindowState) *Config {
 	v := viper.New()
 	configDir := GetConfigDir()
 	err := os.MkdirAll(configDir, 0755)
@@ -86,7 +75,7 @@ func Load() *Config {
 
 	// 设置默认值
 	defaultSavePath := filepath.Join(GetUserHomeDir(), "Downloads")
-	v.SetDefault("window_state", defaultWindowState)
+	v.SetDefault("window_state", defaultState)
 	v.SetDefault("save_path", defaultSavePath)
 	defaultHostName, err := os.Hostname()
 	if err != nil {

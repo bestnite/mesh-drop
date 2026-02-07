@@ -128,13 +128,13 @@ func (s *Service) StoreTransfersToList(transfers []*Transfer) {
 	for _, transfer := range transfers {
 		s.transferList.Store(transfer.ID, transfer)
 	}
-	s.SaveHistory()
+	s.SaveHistory(transfers)
 	s.NotifyTransferListUpdate()
 }
 
 func (s *Service) StoreTransferToList(transfer *Transfer) {
 	s.transferList.Store(transfer.ID, transfer)
-	s.SaveHistory()
+	s.SaveHistory([]*Transfer{transfer})
 	s.NotifyTransferListUpdate()
 }
 
@@ -154,12 +154,12 @@ func (s *Service) CleanFinishedTransferList() {
 		}
 		return true
 	})
-	s.SaveHistory()
+	s.SaveHistory(s.GetTransferList())
 	s.NotifyTransferListUpdate()
 }
 
 func (s *Service) DeleteTransfer(transferID string) {
 	s.transferList.Delete(transferID)
-	s.SaveHistory()
+	s.SaveHistory(s.GetTransferList())
 	s.NotifyTransferListUpdate()
 }

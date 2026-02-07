@@ -83,6 +83,7 @@ export class Transfer {
     "sender": discovery$0.Peer;
 
     /**
+     * FileName 如果 ContentType 为 file，文件名；如果 ContentType 为 folder，文件夹名；如果 ContentType 为 text，空
      * 文件名
      */
     "file_name": string;

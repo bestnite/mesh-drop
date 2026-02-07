@@ -61,8 +61,8 @@ export function ResolvePendingRequest(id: string, accept: boolean, savePath: str
     return $Call.ByID(207902967, id, accept, savePath);
 }
 
-export function SaveHistory(): $CancellablePromise<void> {
-    return $Call.ByID(713135400);
+export function SaveHistory(transfers: ($models.Transfer | null)[]): $CancellablePromise<void> {
+    return $Call.ByID(713135400, transfers);
 }
 
 export function SendFile(target: discovery$0.Peer | null, targetIP: string, filePath: string): $CancellablePromise<void> {

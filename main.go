@@ -42,9 +42,8 @@ func init() {
 }
 
 func NewApp() *App {
-	conf := config.Load()
 	app := application.New(application.Options{
-		Name: "mesh-drop",
+		Name: "MeshDrop",
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
 		},
@@ -54,12 +53,28 @@ func NewApp() *App {
 		Icon: icon,
 	})
 
+	// 获取默认屏幕大小
+	defaultWidth := 1024
+	defaultHeight := 768
+
+	screen := app.Screen.GetPrimary()
+	if screen != nil {
+		defaultWidth = int(float64(screen.Size.Width) * 0.8)
+		defaultHeight = int(float64(screen.Size.Height) * 0.8)
+		slog.Info("Primary screen found", "width", screen.Size.Width, "height", screen.Size.Height, "defaultWidth", defaultWidth, "defaultHeight", defaultHeight)
+	} else {
+		slog.Info("No primary screen found, using defaults")
+	}
+
+	conf := config.Load(config.WindowState{
+		Width:  defaultWidth,
+		Height: defaultHeight,
+	})
+
 	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:          "mesh drop",
+		Title:          "MeshDrop",
 		Width:          conf.GetWindowState().Width,
 		Height:         conf.GetWindowState().Height,
-		X:              conf.GetWindowState().X,
-		Y:              conf.GetWindowState().Y,
 		EnableFileDrop: true,
 		Linux: application.LinuxWindow{
 			WebviewGpuPolicy: application.WebviewGpuPolicyAlways,
@@ -114,7 +129,7 @@ func (a *App) registerCustomEvents() {
 	application.RegisterEvent[application.Void]("transfer:refreshList")
 }
 
-func (a *App) setupWindowEvents() {
+func (a *App) setupEvents() {
 	// 窗口文件拖拽事件
 	a.mainWindows.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
 		files := event.Context().DroppedFiles()
@@ -125,17 +140,26 @@ func (a *App) setupWindowEvents() {
 		})
 	})
 
-	// 应用关闭事件
-	a.app.OnShutdown(func() {
-		x, y := a.mainWindows.Position()
-		width, height := a.mainWindows.Size()
+	// 窗口关闭事件
+	a.mainWindows.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		if a.conf.GetCloseToSystray() {
+			event.Cancel()
+			a.mainWindows.Hide()
+			return
+		}
+
+		w, h := a.mainWindows.Size()
+
 		a.conf.SetWindowState(config.WindowState{
-			X:      x,
-			Y:      y,
-			Width:  width,
-			Height: height,
+			Width:  w,
+			Height: h,
 		})
 
+		slog.Info("Window closed", "width", w, "height", h)
+	})
+
+	// 应用关闭事件
+	a.app.OnShutdown(func() {
 		// 保存传输历史
 		if a.conf.GetSaveHistory() {
 			// 将 pending 状态的任务改为 canceled
@@ -145,13 +169,8 @@ func (a *App) setupWindowEvents() {
 					task.Status = transfer.TransferStatusCanceled
 				}
 			}
-			a.transferService.SaveHistory()
-		}
-
-		// 保存配置
-		err := a.conf.Save()
-		if err != nil {
-			slog.Error("Failed to save config", "error", err)
+			// 保存传输历史
+			a.transferService.SaveHistory(t)
 		}
 	})
 }
@@ -176,20 +195,13 @@ func (a *App) setupSystray() {
 	})
 
 	systray.SetMenu(menu)
-
-	a.mainWindows.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		if a.conf.GetCloseToSystray() {
-			event.Cancel()
-			a.mainWindows.Hide()
-		}
-	})
 }
 
 func (a *App) Run() {
 	a.registerServices()
 	a.setupSystray()
 	a.registerCustomEvents()
-	a.setupWindowEvents()
+	a.setupEvents()
 	err := a.app.Run()
 	if err != nil {
 		panic(err)

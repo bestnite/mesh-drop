@@ -6,10 +6,10 @@
 		"0000": {
 			"ProductVersion": "0.1.0",
 			"CompanyName": "Nite",
-			"FileDescription": "A mesh-drop application",
+			"FileDescription": "MeshDrop - A cross-platform file transfer application",
 			"LegalCopyright": "© 2026, Nite",
-			"ProductName": "Nite",
-			"Comments": "A mesh-drop application"
+			"ProductName": "MeshDrop",
+			"Comments": "A cross-platform file transfer application"
 		}
 	}
 }
