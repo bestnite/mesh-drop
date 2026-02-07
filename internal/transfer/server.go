@@ -32,7 +32,7 @@ func (s *Service) handleAsk(c *gin.Context) {
 	}
 
 	// 检查是否已经存在
-	if _, exists := s.transferList.Load(task.ID); exists {
+	if _, exists := s.transfers.Load(task.ID); exists {
 		// 如果已经存在，说明是网络重试，直接忽略
 		return
 	}

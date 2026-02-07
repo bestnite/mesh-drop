@@ -19,16 +19,16 @@ export enum Language {
  * WindowState 定义窗口状态
  */
 export class WindowState {
-    "Width": number;
-    "Height": number;
+    "width": number;
+    "height": number;
 
     /** Creates a new WindowState instance. */
     constructor($$source: Partial<WindowState> = {}) {
-        if (!("Width" in $$source)) {
-            this["Width"] = 0;
+        if (!("width" in $$source)) {
+            this["width"] = 0;
         }
-        if (!("Height" in $$source)) {
-            this["Height"] = 0;
+        if (!("height" in $$source)) {
+            this["height"] = 0;
         }
 
         Object.assign(this, $$source);

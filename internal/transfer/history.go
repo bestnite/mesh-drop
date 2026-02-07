@@ -8,25 +8,36 @@ import (
 	"path/filepath"
 )
 
-func (s *Service) SaveHistory(transfers []*Transfer) {
+func (s *Service) SaveHistory() {
 	if !s.config.GetSaveHistory() {
 		return
 	}
 	configDir := config.GetConfigDir()
 	historyPath := filepath.Join(configDir, "history.json")
-	historyJson, err := json.Marshal(transfers)
+	tempPath := historyPath + ".tmp"
+
+	// 序列化传输列表
+	historyJson, err := json.MarshalIndent(s.GetTransferList(), "", "  ")
 	if err != nil {
+		slog.Error("Failed to marshal history", "error", err, "component", "transfer")
 		return
 	}
-	file, err := os.OpenFile(historyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
+
+	// 写入临时文件
+	if err := os.WriteFile(tempPath, historyJson, 0644); err != nil {
+		slog.Error("Failed to write temp history file", "error", err, "component", "transfer")
 		return
 	}
-	defer file.Close()
-	_, err = file.Write(historyJson)
-	if err != nil {
-		slog.Error("Failed to write history", "error", err)
+
+	// 原子性重命名
+	if err := os.Rename(tempPath, historyPath); err != nil {
+		slog.Error("Failed to rename temp history file", "error", err, "component", "transfer")
+		// 清理临时文件
+		_ = os.Remove(tempPath)
+		return
 	}
+
+	slog.Info("History saved successfully", "path", historyPath, "component", "transfer")
 }
 
 func (s *Service) LoadHistory() {

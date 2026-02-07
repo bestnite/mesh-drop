@@ -163,14 +163,15 @@ func (a *App) setupEvents() {
 		// 保存传输历史
 		if a.conf.GetSaveHistory() {
 			// 将 pending 状态的任务改为 canceled
-			t := a.transferService.GetTransferList()
-			for _, task := range t {
-				if task.Status == transfer.TransferStatusPending {
-					task.Status = transfer.TransferStatusCanceled
+			a.transferService.GetTransferSyncMap().Range(func(key, value any) bool {
+				t := value.(*transfer.Transfer)
+				if t.Status == transfer.TransferStatusPending {
+					t.Status = transfer.TransferStatusCanceled
 				}
-			}
+				return true
+			})
 			// 保存传输历史
-			a.transferService.SaveHistory(t)
+			a.transferService.SaveHistory()
 		}
 	})
 }

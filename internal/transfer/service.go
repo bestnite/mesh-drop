@@ -26,7 +26,7 @@ type Service struct {
 
 	// pendingRequests 存储等待用户确认的通道
 	// Key: TransferID, Value: *Transfer
-	transferList sync.Map
+	transfers sync.Map
 
 	discoveryService *discovery.Service
 
@@ -90,9 +90,13 @@ func (s *Service) Start() {
 	}()
 }
 
+func (s *Service) GetTransferSyncMap() *sync.Map {
+	return &s.transfers
+}
+
 func (s *Service) GetTransferList() []*Transfer {
 	var requests []*Transfer = make([]*Transfer, 0)
-	s.transferList.Range(func(key, value any) bool {
+	s.transfers.Range(func(key, value any) bool {
 		transfer := value.(*Transfer)
 		requests = append(requests, transfer)
 		return true
@@ -105,7 +109,7 @@ func (s *Service) GetTransferList() []*Transfer {
 }
 
 func (s *Service) GetTransfer(transferID string) (*Transfer, bool) {
-	val, ok := s.transferList.Load(transferID)
+	val, ok := s.transfers.Load(transferID)
 	if !ok {
 		return nil, false
 	}
@@ -126,15 +130,13 @@ func (s *Service) CancelTransfer(transferID string) {
 
 func (s *Service) StoreTransfersToList(transfers []*Transfer) {
 	for _, transfer := range transfers {
-		s.transferList.Store(transfer.ID, transfer)
+		s.transfers.Store(transfer.ID, transfer)
 	}
-	s.SaveHistory(transfers)
 	s.NotifyTransferListUpdate()
 }
 
 func (s *Service) StoreTransferToList(transfer *Transfer) {
-	s.transferList.Store(transfer.ID, transfer)
-	s.SaveHistory([]*Transfer{transfer})
+	s.transfers.Store(transfer.ID, transfer)
 	s.NotifyTransferListUpdate()
 }
 
@@ -144,22 +146,20 @@ func (s *Service) NotifyTransferListUpdate() {
 
 // CleanTransferList 清理完成的 transfer
 func (s *Service) CleanFinishedTransferList() {
-	s.transferList.Range(func(key, value any) bool {
+	s.transfers.Range(func(key, value any) bool {
 		task := value.(*Transfer)
 		if task.Status == TransferStatusCompleted ||
 			task.Status == TransferStatusError ||
 			task.Status == TransferStatusCanceled ||
 			task.Status == TransferStatusRejected {
-			s.transferList.Delete(key)
+			s.transfers.Delete(key)
 		}
 		return true
 	})
-	s.SaveHistory(s.GetTransferList())
 	s.NotifyTransferListUpdate()
 }
 
 func (s *Service) DeleteTransfer(transferID string) {
-	s.transferList.Delete(transferID)
-	s.SaveHistory(s.GetTransferList())
+	s.transfers.Delete(transferID)
 	s.NotifyTransferListUpdate()
 }

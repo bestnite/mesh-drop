@@ -8,6 +8,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as discovery$0 from "../discovery/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as sync$0 from "../../../sync/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -45,6 +48,12 @@ export function GetTransferList(): $CancellablePromise<($models.Transfer | null)
     });
 }
 
+export function GetTransferSyncMap(): $CancellablePromise<sync$0.Map | null> {
+    return $Call.ByID(2986557111).then(($result: any) => {
+        return $$createType4($result);
+    });
+}
+
 export function LoadHistory(): $CancellablePromise<void> {
     return $Call.ByID(2987999795);
 }
@@ -61,8 +70,8 @@ export function ResolvePendingRequest(id: string, accept: boolean, savePath: str
     return $Call.ByID(207902967, id, accept, savePath);
 }
 
-export function SaveHistory(transfers: ($models.Transfer | null)[]): $CancellablePromise<void> {
-    return $Call.ByID(713135400, transfers);
+export function SaveHistory(): $CancellablePromise<void> {
+    return $Call.ByID(713135400);
 }
 
 export function SendFile(target: discovery$0.Peer | null, targetIP: string, filePath: string): $CancellablePromise<void> {
@@ -97,3 +106,5 @@ export function StoreTransfersToList(transfers: ($models.Transfer | null)[]): $C
 const $$createType0 = $models.Transfer.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = sync$0.Map.createFrom;
+const $$createType4 = $Create.Nullable($$createType3);

@@ -7,6 +7,10 @@ body,
     /* 标准属性 */
     cursor: default;
     /* 鼠标指针变为默认箭头，而不是文本输入的 I 形 */
+    overflow: hidden;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 input,
