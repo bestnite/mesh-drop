@@ -74,7 +74,7 @@ export class NotificationOptions {
     "subtitle"?: string;
     "body"?: string;
     "categoryId"?: string;
-    "data"?: { [_: string]: any };
+    "data"?: { [_ in string]?: any };
 
     /** Creates a new NotificationOptions instance. */
     constructor($$source: Partial<NotificationOptions> = {}) {

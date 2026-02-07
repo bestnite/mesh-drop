@@ -41,7 +41,7 @@ export function GetSavePath(): $CancellablePromise<string> {
     return $Call.ByID(4081533263);
 }
 
-export function GetTrusted(): $CancellablePromise<{ [_: string]: string }> {
+export function GetTrusted(): $CancellablePromise<{ [_ in string]?: string }> {
     return $Call.ByID(800326956).then(($result: any) => {
         return $$createType0($result);
     });

@@ -5,9 +5,9 @@ project_name: mesh-drop
 before:
   hooks:
     - go mod tidy
-    - wails3 generate bindings -ts
+    - go tool wails3 generate bindings -ts
     - sh -c 'cd frontend && npm run build'
-    - wails3 generate .desktop -name "{{.ProjectName}}" -exec "{{.ProjectName}}" -icon "{{.ProjectName}}.png" -outputfile "goreleaser/{{.ProjectName}}.desktop" -categories "Network;FileTransfer;" -keywords "mesh,transfer,file,network,drop"
+    - go tool wails3 generate .desktop -name "{{.ProjectName}}" -exec "{{.ProjectName}}" -icon "{{.ProjectName}}.png" -outputfile "goreleaser/{{.ProjectName}}.desktop" -categories "Network;FileTransfer;" -keywords "mesh,transfer,file,network,drop"
 
 builds:
   - id: linux-amd64
@@ -41,8 +41,8 @@ builds:
       - -s -w -H windowsgui -X mesh-drop/internal/config.Version={{ .Version }}
     hooks:
       pre:
-        - "wails3 generate icons -input goreleaser/icon.png -windowsfilename goreleaser/icon.ico"
-        - "wails3 generate syso -arch amd64 -icon goreleaser/icon.ico -manifest goreleaser/wails.exe.manifest -info goreleaser/info.json -out goreleaser/wails_windows_amd64.syso"
+        - "go tool wails3 generate icons -input goreleaser/icon.png -windowsfilename goreleaser/icon.ico"
+        - "go tool wails3 generate syso -arch amd64 -icon goreleaser/icon.ico -manifest goreleaser/wails.exe.manifest -info goreleaser/info.json -out goreleaser/wails_windows_amd64.syso"
       post: "rm -f goreleaser/wails_windows_amd64.syso"
 
 archives:

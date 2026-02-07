@@ -35,7 +35,6 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 		slog.Error("Failed to open file", "path", filePath, "error", err, "component", "transfer-client")
 		return
 	}
-	defer file.Close()
 
 	stat, err := file.Stat()
 	if err != nil {
@@ -54,6 +53,7 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 	s.StoreTransferToList(task)
 
 	go func() {
+		defer file.Close()
 		// 任务结束后清理 ctx
 		defer func() {
 			s.cancelMap.Delete(taskID)

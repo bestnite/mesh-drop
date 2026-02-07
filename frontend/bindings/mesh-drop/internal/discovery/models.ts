@@ -40,7 +40,7 @@ export class Peer {
      * Routes 记录了设备的 IP 地址和状态。
      * Key: ip, Value: *RouteState
      */
-    "routes": { [_: string]: RouteState | null };
+    "routes": { [_ in string]?: RouteState | null };
 
     /**
      * Port 是文件传输服务的监听端口。
