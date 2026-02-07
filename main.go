@@ -81,6 +81,9 @@ func main() {
 		},
 	})
 
+	// 设置系统托盘
+	setupSystray(app, window)
+
 	// 窗口文件拖拽事件
 	window.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
 		files := event.Context().DroppedFiles()
@@ -90,10 +93,6 @@ func main() {
 			Target: details.ElementID,
 		})
 	})
-
-	// 窗口关闭事件
-	// window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-	// })
 
 	// 应用关闭事件
 	app.OnShutdown(func() {

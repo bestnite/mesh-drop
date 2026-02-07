@@ -51,7 +51,7 @@ onMounted(async () => {
 // --- 方法 ---
 const changeSavePath = async () => {
   const opts: Dialogs.OpenFileDialogOptions = {
-    Title: "Select Save Path",
+    Title: t("settings.selectSavePath"),
     CanChooseDirectories: true,
     CanChooseFiles: false,
     AllowsMultipleSelection: false,

@@ -15,15 +15,15 @@ import {
 } from "../../bindings/mesh-drop/internal/transfer/service";
 import { Peer } from "../../bindings/mesh-drop/internal/discovery/models";
 import {
-  IsTrustedPeer,
-  AddTrustedPeer,
-  RemoveTrustedPeer,
+  IsTrusted,
+  AddTrust,
+  RemoveTrust,
 } from "../../bindings/mesh-drop/internal/config/config";
 
 // --- 生命周期 ---
 onMounted(async () => {
   try {
-    isTrusted.value = await IsTrustedPeer(props.peer.id);
+    isTrusted.value = await IsTrusted(props.peer.id);
   } catch (err) {
     console.error("Failed to check trusted peer status:", err);
   }
@@ -136,7 +136,7 @@ const handleSendFolder = async () => {
 
   SendFolder(props.peer, selectedIp.value, folderPath as string).catch((e) => {
     console.error(e);
-    alert("Failed to send folder: " + e);
+    alert(t("discover.sendFolderFailed", { error: e }));
   });
   emit("transferStarted");
 };
@@ -150,19 +150,21 @@ const handleSendClipboard = async () => {
   }
   SendText(props.peer, selectedIp.value, text).catch((e) => {
     console.error(e);
-    alert("Failed to send clipboard: " + e);
+    alert(t("discover.sendClipboardFailed", { error: e }));
   });
   emit("transferStarted");
 };
 
 const handleTrust = () => {
-  AddTrustedPeer(props.peer.id, props.peer.pk);
+  AddTrust(props.peer.id, props.peer.pk);
   isTrusted.value = true;
 };
 
 const handleUntrust = () => {
-  RemoveTrustedPeer(props.peer.id);
+  RemoveTrust(props.peer.id);
   isTrusted.value = false;
+
+  props.peer.trust_mismatch = false;
 };
 </script>
 
@@ -226,9 +228,9 @@ const handleUntrust = () => {
         variant="tonal"
         prepend-icon="mdi-alert"
         :ripple="false"
-        style="pointer-events: none"
+        style="pointer-events: none; min-width: 0"
       >
-        {{ t("discover.mismatch") }}
+        <span class="text-truncate">{{ t("discover.mismatch") }}</span>
       </v-btn>
 
       <v-menu v-else>

@@ -228,13 +228,20 @@ func (s *Service) startListening() {
 
 		// 验证身份一致性 (防止 ID 欺骗)
 		trustMismatch := false
-		trustedKeys := s.config.GetTrustedPeer()
+		trustedKeys := s.config.GetTrusted()
 		if knownKey, ok := trustedKeys[packet.ID]; ok {
 			if knownKey != packet.PublicKey {
 				slog.Warn("SECURITY ALERT: Peer ID mismatch with known public key (Spoofing attempt?)", "id", packet.ID, "known_key", knownKey, "received_key", packet.PublicKey)
 				trustMismatch = true
 				// 当发现 ID 欺骗时，不更新 peer，而是标记为 trustMismatch
 				// 用户可以手动重新添加信任
+			}
+		} else {
+			// 不存在于信任列表
+			// 存在之前在信任列表，但是不匹配被用户手动重置了，此时需要将 peer.TrustMismatch 标记为 false
+			// 否则在 handleHeartbeat 里会一直标记为不匹配
+			if peer, ok := s.peers[packet.ID]; ok {
+				peer.TrustMismatch = false
 			}
 		}
 

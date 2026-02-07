@@ -49,7 +49,7 @@ func (s *Service) handleAsk(c *gin.Context) {
 		task.Sender.TrustMismatch = peer.TrustMismatch
 	}
 
-	if s.config.GetAutoAccept() || (s.config.IsTrustedPeer(task.Sender.ID) && !task.Sender.TrustMismatch) {
+	if s.config.GetAutoAccept() || (s.config.IsTrusted(task.Sender.ID) && !task.Sender.TrustMismatch) {
 		task.DecisionChan <- Decision{
 			ID:       task.ID,
 			Accepted: true,

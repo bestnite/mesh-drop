@@ -7,7 +7,10 @@
         "edit": "Edit",
         "loading": "Loading...",
         "success": "Success",
-        "error": "Error"
+        "error": "Error",
+        "accept": "Accept",
+        "reject": "Reject",
+        "copy": "Copy"
     },
     "menu": {
         "discover": "Discover",
@@ -17,7 +20,20 @@
     "discover": {
         "scanning": "Scanning for peers...",
         "noPeers": "No peers found",
-        "send": "Send"
+        "send": "Send",
+        "sendFiles": "Send Files",
+        "sendFolder": "Send Folder",
+        "sendText": "Send Text",
+        "sendClipboard": "Send Clipboard",
+        "selectFolder": "Select Folder",
+        "clipboardEmpty": "Clipboard is empty",
+        "noRoute": "No Route",
+        "mismatch": "Trust Mismatch",
+        "resetTrust": "Reset Trust",
+        "trustPeer": "Trust Peer",
+        "untrustPeer": "Untrust Peer",
+        "sendFolderFailed": "Failed to send folder: {error}",
+        "sendClipboardFailed": "Failed to send clipboard: {error}"
     },
     "transfers": {
         "noTransfers": "No transfers yet",
@@ -26,7 +42,16 @@
         "transferring": "Transferring",
         "completed": "Completed",
         "failed": "Failed",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "selectSavePath": "Select Save Path",
+        "text": "Text",
+        "folder": "Folder",
+        "securityAlert": "Security Alert",
+        "rejected": "Rejected",
+        "waitingForAccept": "Waiting for accept",
+        "saveToFolder": "Save to Folder",
+        "viewContent": "View Content",
+        "textContent": "Text Content"
     },
     "settings": {
         "savePath": "Save Path",
@@ -35,6 +60,7 @@
         "saveHistory": "Save History",
         "autoAccept": "Auto Accept",
         "version": "Version",
-        "language": "Language"
+        "language": "Language",
+        "selectSavePath": "Select Save Path"
     }
 }

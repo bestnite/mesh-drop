@@ -254,7 +254,7 @@ func (c *Config) GetWindowState() WindowState {
 	return c.WindowState
 }
 
-func (c *Config) AddTrustedPeer(peerID string, publicKey string) {
+func (c *Config) AddTrust(peerID string, publicKey string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.TrustedPeer == nil {
@@ -265,13 +265,13 @@ func (c *Config) AddTrustedPeer(peerID string, publicKey string) {
 	_ = c.save()
 }
 
-func (c *Config) GetTrustedPeer() map[string]string {
+func (c *Config) GetTrusted() map[string]string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.TrustedPeer
 }
 
-func (c *Config) RemoveTrustedPeer(peerID string) {
+func (c *Config) RemoveTrust(peerID string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.TrustedPeer, peerID)
@@ -279,7 +279,7 @@ func (c *Config) RemoveTrustedPeer(peerID string) {
 	_ = c.save()
 }
 
-func (c *Config) IsTrustedPeer(peerID string) bool {
+func (c *Config) IsTrusted(peerID string) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	_, exists := c.TrustedPeer[peerID]

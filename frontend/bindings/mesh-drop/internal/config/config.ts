@@ -9,8 +9,8 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function AddTrustedPeer(peerID: string, publicKey: string): $CancellablePromise<void> {
-    return $Call.ByID(2866399505, peerID, publicKey);
+export function AddTrust(peerID: string, publicKey: string): $CancellablePromise<void> {
+    return $Call.ByID(2986105628, peerID, publicKey);
 }
 
 export function GetAutoAccept(): $CancellablePromise<boolean> {
@@ -41,8 +41,8 @@ export function GetSavePath(): $CancellablePromise<string> {
     return $Call.ByID(4081533263);
 }
 
-export function GetTrustedPeer(): $CancellablePromise<{ [_: string]: string }> {
-    return $Call.ByID(1253442080).then(($result: any) => {
+export function GetTrusted(): $CancellablePromise<{ [_: string]: string }> {
+    return $Call.ByID(800326956).then(($result: any) => {
         return $$createType0($result);
     });
 }
@@ -57,12 +57,12 @@ export function GetWindowState(): $CancellablePromise<$models.WindowState> {
     });
 }
 
-export function IsTrustedPeer(peerID: string): $CancellablePromise<boolean> {
-    return $Call.ByID(3452062706, peerID);
+export function IsTrusted(peerID: string): $CancellablePromise<boolean> {
+    return $Call.ByID(1255607538, peerID);
 }
 
-export function RemoveTrustedPeer(peerID: string): $CancellablePromise<void> {
-    return $Call.ByID(909233322, peerID);
+export function RemoveTrust(peerID: string): $CancellablePromise<void> {
+    return $Call.ByID(732981195, peerID);
 }
 
 /**
