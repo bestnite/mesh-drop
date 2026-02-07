@@ -17,6 +17,10 @@ export function GetAutoAccept(): $CancellablePromise<boolean> {
     return $Call.ByID(2605668438);
 }
 
+export function GetCloseToSystray(): $CancellablePromise<boolean> {
+    return $Call.ByID(3671455511);
+}
+
 export function GetHostName(): $CancellablePromise<string> {
     return $Call.ByID(972342140);
 }
@@ -29,8 +33,12 @@ export function GetLanguage(): $CancellablePromise<$models.Language> {
     return $Call.ByID(480133131);
 }
 
-export function GetLanguageByString(str: string): $CancellablePromise<$models.Language> {
-    return $Call.ByID(905794983, str);
+export function GetPrivateKey(): $CancellablePromise<string> {
+    return $Call.ByID(353744619);
+}
+
+export function GetPublicKey(): $CancellablePromise<string> {
+    return $Call.ByID(2506498735);
 }
 
 export function GetSaveHistory(): $CancellablePromise<boolean> {
@@ -74,6 +82,10 @@ export function Save(): $CancellablePromise<void> {
 
 export function SetAutoAccept(autoAccept: boolean): $CancellablePromise<void> {
     return $Call.ByID(3371961138, autoAccept);
+}
+
+export function SetCloseToSystray(closeToSystray: boolean): $CancellablePromise<void> {
+    return $Call.ByID(2558495467, closeToSystray);
 }
 
 export function SetHostName(hostName: string): $CancellablePromise<void> {

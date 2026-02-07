@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 // --- Wails & 后端绑定 ---
 import { Events, Dialogs } from "@wailsio/runtime";
@@ -20,6 +21,7 @@ const emit = defineEmits<{
 }>();
 
 // --- 状态 ---
+const { t } = useI18n();
 const fileList = ref<{ name: string; path: string }[]>([]);
 
 // --- 计算属性 ---
@@ -51,7 +53,7 @@ watch(show, (newVal) => {
 // --- 方法 ---
 const openFileDialog = async () => {
   const files = await Dialogs.OpenFile({
-    Title: "Select files to send",
+    Title: t("modal.fileSend.selectTitle"),
     AllowsMultipleSelection: true,
   });
 
@@ -91,14 +93,14 @@ const handleSendFiles = async () => {
     show.value = false;
   } catch (e) {
     console.error(e);
-    alert("Failed to send files: " + e);
+    alert(t("modal.fileSend.failed", { error: e }));
   }
 };
 </script>
 
 <template>
   <v-dialog v-model="show" width="600" persistent eager>
-    <v-card title="Send Files">
+    <v-card :title="$t('modal.fileSend.title')">
       <v-card-text>
         <div
           v-if="fileList.length === 0"
@@ -113,7 +115,7 @@ const handleSendFiles = async () => {
             class="mb-2"
           ></v-icon>
           <div class="text-body-1 text-medium-emphasis">
-            Click to select files
+            {{ $t("modal.fileSend.dragDrop") }}
           </div>
         </div>
 
@@ -153,20 +155,23 @@ const handleSendFiles = async () => {
             @click="openFileDialog"
             class="mt-2"
           >
-            Add more files
+            {{ $t("modal.fileSend.addMore") }}
           </v-btn>
         </div>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn variant="text" @click="show = false">Cancel</v-btn>
+        <v-btn variant="text" @click="show = false">{{
+          $t("common.cancel")
+        }}</v-btn>
         <v-btn
           color="primary"
           @click="handleSendFiles"
           :disabled="fileList.length === 0"
         >
-          Send {{ fileList.length > 0 ? `(${fileList.length})` : "" }}
+          {{ $t("modal.fileSend.sendSrc") }}
+          {{ fileList.length > 0 ? `(${fileList.length})` : "" }}
         </v-btn>
       </v-card-actions>
     </v-card>

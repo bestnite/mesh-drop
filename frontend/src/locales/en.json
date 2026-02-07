@@ -61,6 +61,24 @@
         "autoAccept": "Auto Accept",
         "version": "Version",
         "language": "Language",
-        "selectSavePath": "Select Save Path"
+        "selectSavePath": "Select Save Path",
+        "closeToSystray": "Close to Systray"
+    },
+    "modal": {
+        "fileSend": {
+            "title": "Send Files",
+            "selectTitle": "Select files to send",
+            "dragDrop": "Click to select files",
+            "addMore": "Add more files",
+            "sendSrc": "Send",
+            "failed": "Failed to send files: {error}"
+        },
+        "textSend": {
+            "title": "Send Text",
+            "contentLabel": "Content",
+            "placeholder": "Type something to send...",
+            "send": "Send",
+            "failed": "Failed to send text: {error}"
+        }
     }
 }

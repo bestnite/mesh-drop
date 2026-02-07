@@ -17,7 +17,8 @@ import {
   GetVersion,
   GetLanguage,
   SetLanguage,
-  GetLanguageByString,
+  SetCloseToSystray,
+  GetCloseToSystray,
 } from "../../bindings/mesh-drop/internal/config/config";
 import { Language } from "bindings/mesh-drop/internal/config";
 
@@ -27,6 +28,7 @@ const hostName = ref("");
 const autoAccept = ref(false);
 const saveHistory = ref(false);
 const version = ref("");
+const closeToSystray = ref(false);
 
 const { t, locale } = useI18n();
 
@@ -46,6 +48,7 @@ onMounted(async () => {
   if (l != "") {
     locale.value = l;
   }
+  closeToSystray.value = await GetCloseToSystray();
 });
 
 // --- 方法 ---
@@ -71,6 +74,7 @@ watch(locale, async (newVal) => {
 
 <template>
   <v-list lines="one" bg-color="transparent">
+    <!-- 保存路径 -->
     <v-list-item :title="t('settings.savePath')" :subtitle="savePath">
       <template #prepend>
         <v-icon icon="mdi-folder-download"></v-icon>
@@ -86,6 +90,8 @@ watch(locale, async (newVal) => {
         </v-btn>
       </template>
     </v-list-item>
+
+    <!-- 主机名 -->
     <v-list-item :title="t('settings.hostName')">
       <template #prepend>
         <v-icon icon="mdi-laptop"></v-icon>
@@ -100,6 +106,8 @@ watch(locale, async (newVal) => {
         ></v-text-field>
       </template>
     </v-list-item>
+
+    <!-- 保存历史 -->
     <v-list-item :title="t('settings.saveHistory')">
       <template #prepend>
         <v-icon icon="mdi-history"></v-icon>
@@ -114,6 +122,8 @@ watch(locale, async (newVal) => {
         ></v-switch>
       </template>
     </v-list-item>
+
+    <!-- 自动接受 -->
     <v-list-item :title="t('settings.autoAccept')">
       <template #prepend>
         <v-icon icon="mdi-content-save"></v-icon>
@@ -128,15 +138,24 @@ watch(locale, async (newVal) => {
         ></v-switch>
       </template>
     </v-list-item>
-    <v-list-item :title="t('settings.version')">
+
+    <!-- 关闭窗口时最小化到托盘 -->
+    <v-list-item :title="t('settings.closeToSystray')">
       <template #prepend>
-        <v-icon icon="mdi-information"></v-icon>
+        <v-icon icon="mdi-tray"></v-icon>
       </template>
       <template #append>
-        <div class="text-grey">{{ version }}</div>
+        <v-switch
+          v-model="closeToSystray"
+          color="primary"
+          inset
+          hide-details
+          @update:modelValue="SetCloseToSystray(closeToSystray)"
+        ></v-switch>
       </template>
     </v-list-item>
 
+    <!-- 语言 -->
     <v-list-item :title="t('settings.language')">
       <template #prepend>
         <v-icon icon="mdi-translate"></v-icon>
@@ -150,6 +169,16 @@ watch(locale, async (newVal) => {
           hide-details
           width="150"
         ></v-select>
+      </template>
+    </v-list-item>
+
+    <!-- 版本 -->
+    <v-list-item :title="t('settings.version')">
+      <template #prepend>
+        <v-icon icon="mdi-information"></v-icon>
+      </template>
+      <template #append>
+        <div class="text-grey">{{ version }}</div>
       </template>
     </v-list-item>
   </v-list>

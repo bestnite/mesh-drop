@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
 import { computed, ref, watch, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 
 // --- Wails & 后端绑定 ---
 import { SendText } from "../../../bindings/mesh-drop/internal/transfer/service";
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 // --- 状态 ---
+const { t } = useI18n();
 const textContent = ref("");
 const textareaRef = ref();
 
@@ -47,33 +49,35 @@ const executeSendText = async () => {
     textContent.value = "";
   } catch (e) {
     console.error(e);
-    alert("Failed to send text: " + e);
+    alert(t("modal.textSend.failed", { error: e }));
   }
 };
 </script>
 
 <template>
   <v-dialog v-model="show" width="500" persistent eager>
-    <v-card title="Send Text">
+    <v-card :title="$t('modal.textSend.title')">
       <v-card-text>
         <v-textarea
           ref="textareaRef"
           v-model="textContent"
-          label="Content"
-          placeholder="Type something to send..."
+          :label="$t('modal.textSend.contentLabel')"
+          :placeholder="$t('modal.textSend.placeholder')"
           rows="4"
           auto-grow
         ></v-textarea>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn variant="text" @click="show = false">Cancel</v-btn>
+        <v-btn variant="text" @click="show = false">{{
+          $t("common.cancel")
+        }}</v-btn>
         <v-btn
           color="primary"
           @click="executeSendText"
           :disabled="!textContent"
         >
-          Send
+          {{ $t("modal.textSend.send") }}
         </v-btn>
       </v-card-actions>
     </v-card>

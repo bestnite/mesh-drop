@@ -47,7 +47,7 @@ func NewService(config *config.Config, app *application.App, port int) *Service 
 			Name:      config.GetHostName(),
 			Port:      port,
 			OS:        OS(runtime.GOOS),
-			PublicKey: config.PublicKey,
+			PublicKey: config.GetPublicKey(),
 		},
 	}
 }
@@ -129,12 +129,12 @@ func (s *Service) startBroadcasting() {
 			Name:      s.config.GetHostName(),
 			Port:      s.FileServerPort,
 			OS:        OS(runtime.GOOS),
-			PublicKey: s.config.PublicKey,
+			PublicKey: s.config.GetPublicKey(),
 		}
 
 		// 签名
 		sigData := packet.SignPayload()
-		sig, err := security.Sign(s.config.PrivateKey, sigData)
+		sig, err := security.Sign(s.config.GetPrivateKey(), sigData)
 		if err != nil {
 			slog.Error("Failed to sign discovery packet", "error", err)
 			continue

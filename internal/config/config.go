@@ -29,10 +29,7 @@ const (
 	LanguageChinese Language = "zh-Hans"
 )
 
-type Config struct {
-	v  *viper.Viper
-	mu sync.RWMutex
-
+type configData struct {
 	WindowState WindowState       `mapstructure:"window_state"`
 	ID          string            `mapstructure:"id"`
 	PrivateKey  string            `mapstructure:"private_key"`
@@ -43,7 +40,14 @@ type Config struct {
 	SaveHistory bool              `mapstructure:"save_history"`
 	TrustedPeer map[string]string `mapstructure:"trusted_peer"` // ID -> PublicKey
 
-	Language Language `mapstructure:"language"`
+	Language       Language `mapstructure:"language"`
+	CloseToSystray bool     `mapstructure:"close_to_systray"`
+}
+
+type Config struct {
+	v    *viper.Viper
+	mu   sync.RWMutex
+	data configData
 }
 
 // 默认窗口配置
@@ -110,21 +114,24 @@ func Load() *Config {
 		slog.Error("Failed to create default save path", "path", defaultSavePath, "error", err)
 	}
 
-	var config Config
-	if err := v.Unmarshal(&config); err != nil {
+	var data configData
+	if err := v.Unmarshal(&data); err != nil {
 		slog.Error("Failed to unmarshal config", "error", err)
 	}
 
-	config.v = v
+	config := Config{
+		v:    v,
+		data: data,
+	}
 
 	// 如果没有密钥对，生成新的
-	if config.PrivateKey == "" || config.PublicKey == "" {
+	if config.data.PrivateKey == "" || config.data.PublicKey == "" {
 		priv, pub, err := security.GenerateKey()
 		if err != nil {
 			slog.Error("Failed to generate identity keys", "error", err)
 		} else {
-			config.PrivateKey = priv
-			config.PublicKey = pub
+			config.data.PrivateKey = priv
+			config.data.PublicKey = pub
 			v.Set("private_key", priv)
 			v.Set("public_key", pub)
 			// 保存新生成的密钥
@@ -135,8 +142,8 @@ func Load() *Config {
 	}
 
 	// 初始化 TrustedPeer map if nil
-	if config.TrustedPeer == nil {
-		config.TrustedPeer = make(map[string]string)
+	if config.data.TrustedPeer == nil {
+		config.data.TrustedPeer = make(map[string]string)
 	}
 
 	return &config
@@ -171,69 +178,76 @@ func (c *Config) save() error {
 	return nil
 }
 
-// SetSavePath 修改配置
-func (c *Config) SetSavePath(savePath string) {
+// update 是一个辅助函数，用于在锁保护下更新配置并保存
+func (c *Config) update(fn func()) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.SavePath = savePath
-	c.v.Set("save_path", savePath)
-	_ = os.MkdirAll(savePath, 0755)
-	_ = c.save()
+	fn()
+
+	if err := c.save(); err != nil {
+		slog.Error("Failed to save config", "error", err)
+	}
+}
+
+// SetSavePath 修改配置
+func (c *Config) SetSavePath(savePath string) {
+	c.update(func() {
+		c.data.SavePath = savePath
+		c.v.Set("save_path", savePath)
+		_ = os.MkdirAll(savePath, 0755)
+	})
 }
 
 func (c *Config) GetSavePath() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.SavePath
+	return c.data.SavePath
 }
 
 func (c *Config) SetHostName(hostName string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.HostName = hostName
-	c.v.Set("host_name", hostName)
-	_ = c.save()
+	c.update(func() {
+		c.data.HostName = hostName
+		c.v.Set("host_name", hostName)
+	})
 }
 
 func (c *Config) GetHostName() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.HostName
+	return c.data.HostName
 }
 
 func (c *Config) GetID() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.ID
+	return c.data.ID
 }
 
 func (c *Config) SetAutoAccept(autoAccept bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.AutoAccept = autoAccept
-	c.v.Set("auto_accept", autoAccept)
-	_ = c.save()
+	c.update(func() {
+		c.data.AutoAccept = autoAccept
+		c.v.Set("auto_accept", autoAccept)
+	})
 }
 
 func (c *Config) GetAutoAccept() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.AutoAccept
+	return c.data.AutoAccept
 }
 
 func (c *Config) SetSaveHistory(saveHistory bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.SaveHistory = saveHistory
-	c.v.Set("save_history", saveHistory)
-	_ = c.save()
+	c.update(func() {
+		c.data.SaveHistory = saveHistory
+		c.v.Set("save_history", saveHistory)
+	})
 }
 
 func (c *Config) GetSaveHistory() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.SaveHistory
+	return c.data.SaveHistory
 }
 
 func (c *Config) GetVersion() string {
@@ -241,72 +255,82 @@ func (c *Config) GetVersion() string {
 }
 
 func (c *Config) SetWindowState(state WindowState) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.WindowState = state
-	c.v.Set("window_state", state)
-	_ = c.save()
+	c.update(func() {
+		c.data.WindowState = state
+		c.v.Set("window_state", state)
+	})
 }
 
 func (c *Config) GetWindowState() WindowState {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.WindowState
+	return c.data.WindowState
 }
 
 func (c *Config) AddTrust(peerID string, publicKey string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.TrustedPeer == nil {
-		c.TrustedPeer = make(map[string]string)
-	}
-	c.TrustedPeer[peerID] = publicKey
-	c.v.Set("trusted_peer", c.TrustedPeer)
-	_ = c.save()
+	c.update(func() {
+		if c.data.TrustedPeer == nil {
+			c.data.TrustedPeer = make(map[string]string)
+		}
+		c.data.TrustedPeer[peerID] = publicKey
+		c.v.Set("trusted_peer", c.data.TrustedPeer)
+	})
 }
 
 func (c *Config) GetTrusted() map[string]string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.TrustedPeer
+	return c.data.TrustedPeer
 }
 
 func (c *Config) RemoveTrust(peerID string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	delete(c.TrustedPeer, peerID)
-	c.v.Set("trusted_peer", c.TrustedPeer)
-	_ = c.save()
+	c.update(func() {
+		delete(c.data.TrustedPeer, peerID)
+		c.v.Set("trusted_peer", c.data.TrustedPeer)
+	})
 }
 
 func (c *Config) IsTrusted(peerID string) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	_, exists := c.TrustedPeer[peerID]
+	_, exists := c.data.TrustedPeer[peerID]
 	return exists
 }
 
 func (c *Config) SetLanguage(language Language) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.Language = language
-	c.v.Set("language", language)
-	_ = c.save()
+	c.update(func() {
+		c.data.Language = language
+		c.v.Set("language", language)
+	})
 }
 
 func (c *Config) GetLanguage() Language {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.Language
+	return c.data.Language
 }
 
-func (c *Config) GetLanguageByString(str string) Language {
-	switch str {
-	case string(LanguageEnglish):
-		return LanguageEnglish
-	case string(LanguageChinese):
-		return LanguageChinese
-	default:
-		return LanguageEnglish
-	}
+func (c *Config) SetCloseToSystray(closeToSystray bool) {
+	c.update(func() {
+		c.data.CloseToSystray = closeToSystray
+		c.v.Set("close_to_systray", closeToSystray)
+	})
+}
+
+func (c *Config) GetCloseToSystray() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.data.CloseToSystray
+}
+
+func (c *Config) GetPrivateKey() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.data.PrivateKey
+}
+
+func (c *Config) GetPublicKey() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.data.PublicKey
 }

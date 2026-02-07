@@ -61,6 +61,24 @@
         "autoAccept": "自动接收",
         "version": "版本",
         "language": "语言",
-        "selectSavePath": "选择保存路径"
+        "selectSavePath": "选择保存路径",
+        "closeToSystray": "关闭窗口时最小化到托盘"
+    },
+    "modal": {
+        "fileSend": {
+            "title": "发送文件",
+            "selectTitle": "选择要发送的文件",
+            "dragDrop": "点击选择文件",
+            "addMore": "添加更多文件",
+            "sendSrc": "发送",
+            "failed": "发送文件失败: {error}"
+        },
+        "textSend": {
+            "title": "发送文本",
+            "contentLabel": "内容",
+            "placeholder": "输入要发送的内容...",
+            "send": "发送",
+            "failed": "发送文本失败: {error}"
+        }
     }
 }

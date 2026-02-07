@@ -9,16 +9,13 @@ import (
 )
 
 func (s *Service) SaveHistory() {
-	// 将 pending 状态的任务改为 canceled
-	transferList := s.GetTransferList()
-	for _, task := range transferList {
-		if task.Status == TransferStatusPending {
-			task.Status = TransferStatusCanceled
-		}
+	if !s.config.GetSaveHistory() {
+		return
 	}
+	transfers := s.GetTransferList()
 	configDir := config.GetConfigDir()
 	historyPath := filepath.Join(configDir, "history.json")
-	historyJson, err := json.Marshal(transferList)
+	historyJson, err := json.Marshal(transfers)
 	if err != nil {
 		return
 	}
