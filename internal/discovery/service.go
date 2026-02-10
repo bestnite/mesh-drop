@@ -337,7 +337,7 @@ func (s *Service) GetPeerByIP(ip string) (*Peer, bool) {
 
 	for _, p := range s.peers {
 		if p.Routes[ip] != nil {
-			return p, true
+			return p.DeepCopy(), true
 		}
 	}
 	return nil, false
@@ -348,7 +348,10 @@ func (s *Service) GetPeerByID(id string) (*Peer, bool) {
 	defer s.peersMutex.RUnlock()
 
 	peer, ok := s.peers[id]
-	return peer, ok
+	if !ok {
+		return nil, false
+	}
+	return peer.DeepCopy(), true
 }
 
 func (s *Service) GetPeers() []Peer {
@@ -357,7 +360,7 @@ func (s *Service) GetPeers() []Peer {
 
 	list := make([]Peer, 0)
 	for _, p := range s.peers {
-		list = append(list, *p)
+		list = append(list, *p.DeepCopy())
 	}
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].Name < list[j].Name

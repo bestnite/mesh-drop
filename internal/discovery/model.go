@@ -61,3 +61,20 @@ func (p *PresencePacket) SignPayload() []byte {
 	// 格式: id|name|port|os|pk
 	return fmt.Appendf(nil, "%s|%s|%d|%s|%s", p.ID, p.Name, p.Port, p.OS, p.PublicKey)
 }
+
+// DeepCopy 返回 Peer 的深拷贝
+func (p Peer) DeepCopy() *Peer {
+	newPeer := p // 结构体浅拷贝 (值类型字段已复制)
+
+	// 手动深拷贝引用类型字段 (Routes)
+	if p.Routes != nil {
+		newPeer.Routes = make(map[string]*RouteState, len(p.Routes))
+		for k, v := range p.Routes {
+			// RouteState 只有值类型字段，但它是指针，所以需要新建对象并解引用赋值
+			stateCopy := *v
+			newPeer.Routes[k] = &stateCopy
+		}
+	}
+
+	return &newPeer
+}
