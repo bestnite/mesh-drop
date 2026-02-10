@@ -7,6 +7,7 @@ import (
 	"mesh-drop/internal/discovery"
 	"mesh-drop/internal/transfer"
 	"os"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -19,9 +20,14 @@ var assets embed.FS
 //go:embed build/appicon.png
 var icon []byte
 
+type File struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
 type FilesDroppedEvent struct {
-	Files  []string `json:"files"`
-	Target string   `json:"target"`
+	Files  []File `json:"files"`
+	Target string `json:"target"`
 }
 
 type App struct {
@@ -132,7 +138,13 @@ func (a *App) registerCustomEvents() {
 func (a *App) setupEvents() {
 	// 窗口文件拖拽事件
 	a.mainWindows.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
-		files := event.Context().DroppedFiles()
+		files := make([]File, 0)
+		for _, file := range event.Context().DroppedFiles() {
+			files = append(files, File{
+				Name: filepath.Base(file),
+				Path: file,
+			})
+		}
 		details := event.Context().DropTargetDetails()
 		a.app.Event.Emit("files-dropped", FilesDroppedEvent{
 			Files:  files,

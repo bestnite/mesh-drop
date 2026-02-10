@@ -33,7 +33,8 @@
         "trustPeer": "Trust Peer",
         "untrustPeer": "Untrust Peer",
         "sendFolderFailed": "Failed to send folder: {error}",
-        "sendClipboardFailed": "Failed to send clipboard: {error}"
+        "sendClipboardFailed": "Failed to send clipboard: {error}",
+        "dragDropHint": "Drag and drop files here to send"
     },
     "transfers": {
         "noTransfers": "No transfers yet",

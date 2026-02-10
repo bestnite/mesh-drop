@@ -1,18 +1,22 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 // --- Wails & 后端绑定 ---
-import { Events, Dialogs } from "@wailsio/runtime";
+import { Events, Dialogs, Window } from "@wailsio/runtime";
 import { SendFiles } from "../../../bindings/mesh-drop/internal/transfer/service";
 import { Peer } from "../../../bindings/mesh-drop/internal/discovery/models";
+import { File } from "bindings/mesh-drop/models";
+
+onMounted(() => {});
 
 // --- 属性 & 事件 ---
 const props = defineProps<{
   modelValue: boolean;
   peer: Peer;
   selectedIp: string;
+  files: File[];
 }>();
 
 const emit = defineEmits<{
@@ -22,7 +26,6 @@ const emit = defineEmits<{
 
 // --- 状态 ---
 const { t } = useI18n();
-const fileList = ref<{ name: string; path: string }[]>([]);
 
 // --- 计算属性 ---
 const show = computed({
@@ -34,19 +37,15 @@ const show = computed({
 watch(show, (newVal) => {
   if (newVal) {
     Events.On("files-dropped", (event) => {
-      const files: string[] = event.data.files || [];
+      const files: File[] = event.data.files || [];
       files.forEach((f) => {
-        if (!fileList.value.find((existing) => existing.path === f)) {
-          fileList.value.push({
-            name: f.split(/[\/]/).pop() || f,
-            path: f,
-          });
+        if (!props.files.find((existing) => existing.path === f.path)) {
+          props.files.push(f);
         }
       });
     });
   } else {
     Events.Off("files-dropped");
-    fileList.value = [];
   }
 });
 
@@ -60,17 +59,17 @@ const openFileDialog = async () => {
   if (files) {
     if (Array.isArray(files)) {
       files.forEach((f) => {
-        if (!fileList.value.find((existing) => existing.path === f)) {
-          fileList.value.push({
-            name: f.split(/[\\/]/).pop() || f,
+        if (!props.files.find((existing) => existing.path === f)) {
+          props.files.push({
+            name: f.split(/[\/]/).pop() || f,
             path: f,
           });
         }
       });
     } else {
       const f = files as string;
-      if (!fileList.value.find((existing) => existing.path === f)) {
-        fileList.value.push({
+      if (!props.files.find((existing) => existing.path === f)) {
+        props.files.push({
           name: f.split(/[\\/]/).pop() || f,
           path: f,
         });
@@ -80,12 +79,12 @@ const openFileDialog = async () => {
 };
 
 const handleRemoveFile = (index: number) => {
-  fileList.value.splice(index, 1);
+  props.files.splice(index, 1);
 };
 
 const handleSendFiles = async () => {
-  if (fileList.value.length === 0 || !props.selectedIp) return;
-  const paths = fileList.value.map((f) => f.path);
+  if (props.files.length === 0 || !props.selectedIp) return;
+  const paths = props.files.map((f) => f.path);
 
   try {
     await SendFiles(props.peer, props.selectedIp, paths);
@@ -103,10 +102,11 @@ const handleSendFiles = async () => {
     <v-card :title="$t('modal.fileSend.title')">
       <v-card-text>
         <div
-          v-if="fileList.length === 0"
-          class="drop-zone pa-10 text-center rounded-lg border-dashed"
+          v-if="props.files.length === 0"
+          class="drop-zone pa-10 text-center rounded-lg"
           @click="openFileDialog"
           data-file-drop-target
+          id="drop-zone-area"
         >
           <v-icon
             icon="mdi-cloud-upload"
@@ -127,9 +127,10 @@ const handleSendFiles = async () => {
             max-height="400"
             style="overflow-y: auto"
             data-file-drop-target
+            id="drop-zone-list"
           >
             <v-list-item
-              v-for="(file, index) in fileList"
+              v-for="(file, index) in props.files"
               :key="file.path"
               :title="file.name"
               :subtitle="file.path"
@@ -149,8 +150,7 @@ const handleSendFiles = async () => {
 
           <v-btn
             block
-            variant="outlined"
-            style="border-style: dashed"
+            variant="tonal"
             prepend-icon="mdi-plus"
             @click="openFileDialog"
             class="mt-2"
@@ -168,10 +168,10 @@ const handleSendFiles = async () => {
         <v-btn
           color="primary"
           @click="handleSendFiles"
-          :disabled="fileList.length === 0"
+          :disabled="props.files.length === 0"
         >
           {{ $t("modal.fileSend.sendSrc") }}
-          {{ fileList.length > 0 ? `(${fileList.length})` : "" }}
+          {{ props.files.length > 0 ? `(${props.files.length})` : "" }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -180,17 +180,32 @@ const handleSendFiles = async () => {
 
 <style scoped>
 .drop-zone {
-  border: 2px dashed #666; /* Use a darker color or theme var */
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
+
 .drop-zone:hover {
-  border-color: #38bdf8;
-  background-color: rgba(56, 189, 248, 0.05);
+  background-color: rgba(var(--v-theme-primary), 0.08);
 }
 
 .drop-zone.file-drop-target-active {
-  border-color: #38bdf8;
-  background-color: rgba(56, 189, 248, 0.1);
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.12);
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.15);
+}
+
+#drop-zone-list {
+  transition: all 0.3s ease;
+}
+
+#drop-zone-list.file-drop-target-active {
+  box-shadow: inset 0 0 0 2px rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.04);
 }
 </style>

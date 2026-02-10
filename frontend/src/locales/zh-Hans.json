@@ -33,7 +33,8 @@
         "trustPeer": "信任设备",
         "untrustPeer": "取消信任",
         "sendFolderFailed": "发送文件夹失败: {error}",
-        "sendClipboardFailed": "发送剪贴板失败: {error}"
+        "sendClipboardFailed": "发送剪贴板失败: {error}",
+        "dragDropHint": "拖放文件到此处快速发送"
     },
     "transfers": {
         "noTransfers": "暂无传输记录",

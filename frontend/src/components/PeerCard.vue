@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // --- Vue 核心 ---
-import { computed, ref, watch, onMounted } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 
 // --- 组件 ---
@@ -8,7 +8,7 @@ import FileSendModal from "./modals/FileSendModal.vue";
 import TextSendModal from "./modals/TextSendModal.vue";
 
 // --- Wails & 后端绑定 ---
-import { Dialogs, Clipboard } from "@wailsio/runtime";
+import { Dialogs, Clipboard, Events } from "@wailsio/runtime";
 import {
   SendFolder,
   SendText,
@@ -19,14 +19,24 @@ import {
   AddTrust,
   RemoveTrust,
 } from "../../bindings/mesh-drop/internal/config/config";
+import { File } from "bindings/mesh-drop/models";
 
 // --- 生命周期 ---
+const droppedFiles = ref<File[]>([]);
 onMounted(async () => {
   try {
     isTrusted.value = await IsTrusted(props.peer.id);
   } catch (err) {
     console.error("Failed to check trusted peer status:", err);
   }
+  Events.On("files-dropped", (event) => {
+    droppedFiles.value = event.data.files;
+    showFileModal.value = true;
+  });
+});
+
+onUnmounted(() => {
+  Events.Off("files-dropped");
 });
 
 // --- 属性 & 事件 ---
@@ -171,7 +181,14 @@ const handleUntrust = () => {
 </script>
 
 <template>
-  <v-card hover link class="peer-card pa-2" :ripple="false">
+  <v-card
+    hover
+    link
+    class="peer-card pa-2"
+    :ripple="false"
+    data-file-drop-target
+    :id="`drop-zone-peer-${peer.id}`"
+  >
     <template #title>
       <div class="d-flex align-center">
         <v-icon :icon="osIcon" size="24" class="mr-2"></v-icon>
@@ -218,6 +235,16 @@ const handleUntrust = () => {
         <v-chip v-else color="warning" size="small" label>
           {{ t("discover.noRoute") }}
         </v-chip>
+      </div>
+
+      <!-- 拖放提示覆盖层 -->
+      <div class="drag-drop-overlay">
+        <v-icon
+          icon="mdi-file-upload-outline"
+          size="48"
+          color="primary"
+          style="opacity: 0.8"
+        ></v-icon>
       </div>
     </template>
 
@@ -304,6 +331,7 @@ const handleUntrust = () => {
     v-model="showFileModal"
     :peer="peer"
     :selectedIp="selectedIp"
+    :files="droppedFiles"
     @transferStarted="emit('transferStarted')"
   />
 
@@ -314,3 +342,70 @@ const handleUntrust = () => {
     @transferStarted="emit('transferStarted')"
   />
 </template>
+
+<style scoped>
+.peer-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.peer-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgb(var(--v-theme-primary));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.peer-card.file-drop-target-active {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px -4px rgba(var(--v-theme-primary), 0.24) !important;
+  border-color: rgb(var(--v-theme-primary)) !important;
+}
+
+.peer-card.file-drop-target-active::after {
+  opacity: 0.12;
+}
+
+.drag-drop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: rgba(var(--v-theme-surface), 0.8);
+  backdrop-filter: blur(2px);
+}
+
+.peer-card.file-drop-target-active .drag-drop-overlay {
+  opacity: 1;
+}
+
+.drag-drop-content {
+  color: rgb(var(--v-theme-primary));
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(10px);
+  transition: transform 0.3s ease;
+}
+
+.peer-card.file-drop-target-active .drag-drop-content {
+  transform: translateY(0);
+}
+</style>

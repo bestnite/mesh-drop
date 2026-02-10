@@ -150,12 +150,24 @@ const handleCleanFinished = async () => {
       <v-container fluid class="pa-4">
         <!-- 发现视图 -->
         <div v-show="activeKey === 'discover'">
-          <div v-if="peers.length > 0" class="peer-grid">
-            <div v-for="peer in peers" :key="peer.id">
-              <PeerCard
-                :peer="peer"
-                @transferStarted="activeKey = 'transfers'"
-              />
+          <div v-if="peers.length > 0">
+            <v-alert
+              icon="mdi-information-outline"
+              density="compact"
+              variant="tonal"
+              color="primary"
+              class="mb-4 text-body-2"
+              closable
+            >
+              {{ t("discover.dragDropHint") }}
+            </v-alert>
+            <div class="peer-grid">
+              <div v-for="peer in peers" :key="peer.id">
+                <PeerCard
+                  :peer="peer"
+                  @transferStarted="activeKey = 'transfers'"
+                />
+              </div>
             </div>
           </div>
 

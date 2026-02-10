@@ -5,8 +5,33 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+export class File {
+    "name": string;
+    "path": string;
+
+    /** Creates a new File instance. */
+    constructor($$source: Partial<File> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new File instance from a string or object.
+     */
+    static createFrom($$source: any = {}): File {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new File($$parsedSource as Partial<File>);
+    }
+}
+
 export class FilesDroppedEvent {
-    "files": string[];
+    "files": File[];
     "target": string;
 
     /** Creates a new FilesDroppedEvent instance. */
@@ -25,7 +50,7 @@ export class FilesDroppedEvent {
      * Creates a new FilesDroppedEvent instance from a string or object.
      */
     static createFrom($$source: any = {}): FilesDroppedEvent {
-        const $$createField0_0 = $$createType0;
+        const $$createField0_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("files" in $$parsedSource) {
             $$parsedSource["files"] = $$createField0_0($$parsedSource["files"]);
@@ -35,4 +60,5 @@ export class FilesDroppedEvent {
 }
 
 // Private type creation functions
-const $$createType0 = $Create.Array($Create.Any);
+const $$createType0 = File.createFrom;
+const $$createType1 = $Create.Array($$createType0);
