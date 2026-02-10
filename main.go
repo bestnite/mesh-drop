@@ -3,15 +3,15 @@ package main
 import (
 	"embed"
 	"log/slog"
-	"mesh-drop/internal/config"
-	"mesh-drop/internal/discovery"
-	"mesh-drop/internal/transfer"
 	"os"
 	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
+	"mesh-drop/internal/config"
+	"mesh-drop/internal/discovery"
+	"mesh-drop/internal/transfer"
 )
 
 //go:embed all:frontend/dist
@@ -67,7 +67,17 @@ func NewApp() *App {
 	if screen != nil {
 		defaultWidth = int(float64(screen.Size.Width) * 0.8)
 		defaultHeight = int(float64(screen.Size.Height) * 0.8)
-		slog.Info("Primary screen found", "width", screen.Size.Width, "height", screen.Size.Height, "defaultWidth", defaultWidth, "defaultHeight", defaultHeight)
+		slog.Info(
+			"Primary screen found",
+			"width",
+			screen.Size.Width,
+			"height",
+			screen.Size.Height,
+			"defaultWidth",
+			defaultWidth,
+			"defaultHeight",
+			defaultHeight,
+		)
 	} else {
 		slog.Info("No primary screen found, using defaults")
 	}
@@ -137,20 +147,23 @@ func (a *App) registerCustomEvents() {
 
 func (a *App) setupEvents() {
 	// 窗口文件拖拽事件
-	a.mainWindows.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
-		files := make([]File, 0)
-		for _, file := range event.Context().DroppedFiles() {
-			files = append(files, File{
-				Name: filepath.Base(file),
-				Path: file,
+	a.mainWindows.OnWindowEvent(
+		events.Common.WindowFilesDropped,
+		func(event *application.WindowEvent) {
+			files := make([]File, 0)
+			for _, file := range event.Context().DroppedFiles() {
+				files = append(files, File{
+					Name: filepath.Base(file),
+					Path: file,
+				})
+			}
+			details := event.Context().DropTargetDetails()
+			a.app.Event.Emit("files-dropped", FilesDroppedEvent{
+				Files:  files,
+				Target: details.ElementID,
 			})
-		}
-		details := event.Context().DropTargetDetails()
-		a.app.Event.Emit("files-dropped", FilesDroppedEvent{
-			Files:  files,
-			Target: details.ElementID,
-		})
-	})
+		},
+	)
 
 	// 窗口关闭事件
 	a.mainWindows.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {

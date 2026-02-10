@@ -52,7 +52,13 @@ func generateSelfSignedCert(certPath, keyPath string) error {
 	// 在实际的动态环境中，我们可能希望添加所有当前接口的 IP 地址
 	// 实际上，在客户端跳过 IP 验证对于本地 P2P 来说是很常见的。
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	derBytes, err := x509.CreateCertificate(
+		rand.Reader,
+		&template,
+		&template,
+		&priv.PublicKey,
+		priv,
+	)
 	if err != nil {
 		return err
 	}
@@ -73,7 +79,10 @@ func generateSelfSignedCert(certPath, keyPath string) error {
 		return err
 	}
 	defer keyOut.Close()
-	if err := pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)}); err != nil {
+	if err := pem.Encode(
+		keyOut,
+		&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)},
+	); err != nil {
 		return err
 	}
 

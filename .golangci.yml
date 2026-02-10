@@ -1,0 +1,23 @@
+version: "2"
+linters:
+  default: standard
+  enable:
+    - staticcheck
+    - gosec
+  exclusions:
+    rules:
+      - linters:
+          - gosec
+        text: "G304:"
+      - linters:
+          - errcheck
+        text: "is not checked"
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+    - gci
+    - golines
+output:
+  path-mode: abs

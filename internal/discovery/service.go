@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"mesh-drop/internal/config"
-	"mesh-drop/internal/security"
 	"net"
 	"runtime"
 	"sort"
@@ -13,6 +11,8 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"mesh-drop/internal/config"
+	"mesh-drop/internal/security"
 )
 
 const (
@@ -112,7 +112,13 @@ func (s *Service) GetLocalIPInSameSubnet(receiverIP string) (string, bool) {
 			}
 		}
 	}
-	slog.Error("Failed to get local IP in same subnet", "receiverIP", receiverIP, "component", "discovery")
+	slog.Error(
+		"Failed to get local IP in same subnet",
+		"receiverIP",
+		receiverIP,
+		"component",
+		"discovery",
+	)
 	return "", false
 }
 
@@ -222,7 +228,13 @@ func (s *Service) startListening() {
 		sigData := packet.SignPayload()
 		valid, err := security.Verify(packet.PublicKey, sigData, sig)
 		if err != nil || !valid {
-			slog.Warn("Received invalid discovery packet signature", "id", packet.ID, "ip", remoteAddr.IP.String())
+			slog.Warn(
+				"Received invalid discovery packet signature",
+				"id",
+				packet.ID,
+				"ip",
+				remoteAddr.IP.String(),
+			)
 			continue
 		}
 
@@ -231,7 +243,15 @@ func (s *Service) startListening() {
 		trustedKeys := s.config.GetTrusted()
 		if knownKey, ok := trustedKeys[packet.ID]; ok {
 			if knownKey != packet.PublicKey {
-				slog.Warn("SECURITY ALERT: Peer ID mismatch with known public key (Spoofing attempt?)", "id", packet.ID, "known_key", knownKey, "received_key", packet.PublicKey)
+				slog.Warn(
+					"SECURITY ALERT: Peer ID mismatch with known public key (Spoofing attempt?)",
+					"id",
+					packet.ID,
+					"known_key",
+					knownKey,
+					"received_key",
+					packet.PublicKey,
+				)
 				trustMismatch = true
 				// 当发现 ID 欺骗时，不更新 peer，而是标记为 trustMismatch
 				// 用户可以手动重新添加信任

@@ -3,12 +3,12 @@ package config
 import (
 	"encoding/json"
 	"log/slog"
-	"mesh-drop/internal/security"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/google/uuid"
+	"mesh-drop/internal/security"
 )
 
 // WindowState 定义窗口状态
@@ -66,7 +66,7 @@ func GetUserHomeDir() string {
 // New 读取配置
 func Load(defaultState WindowState) *Config {
 	configDir := GetConfigDir()
-	_ = os.MkdirAll(configDir, 0755)
+	_ = os.MkdirAll(configDir, 0o750)
 	configFile := filepath.Join(configDir, "config.json")
 
 	// 设置默认值
@@ -88,7 +88,9 @@ func Load(defaultState WindowState) *Config {
 		TrustedPeer:    make(map[string]string),
 	}
 
-	fileBytes, err := os.ReadFile(configFile)
+	fileBytes, err := os.ReadFile(
+		configFile,
+	)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			slog.Error("Failed to read config file", "error", err)
@@ -107,7 +109,7 @@ func Load(defaultState WindowState) *Config {
 	}
 
 	// 确保默认保存路径存在
-	err = os.MkdirAll(defaultSavePath, 0755)
+	err = os.MkdirAll(defaultSavePath, 0o750)
 	if err != nil {
 		slog.Error("Failed to create default save path", "path", defaultSavePath, "error", err)
 	}
@@ -145,7 +147,7 @@ func (c *Config) Save() error {
 
 func (c *Config) save() error {
 	dir := filepath.Dir(c.configPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return err
 	}
 
@@ -156,7 +158,7 @@ func (c *Config) save() error {
 
 	// 设置配置文件权限为 0600 (仅所有者读写)
 	if c.configPath != "" {
-		if err := os.WriteFile(c.configPath, jsonData, 0600); err != nil {
+		if err := os.WriteFile(c.configPath, jsonData, 0o600); err != nil {
 			slog.Warn("Failed to write config file", "error", err)
 			return err
 		}
@@ -181,7 +183,7 @@ func (c *Config) update(fn func()) {
 func (c *Config) SetSavePath(savePath string) {
 	c.update(func() {
 		c.data.SavePath = savePath
-		_ = os.MkdirAll(savePath, 0755)
+		_ = os.MkdirAll(savePath, 0o750)
 	})
 }
 

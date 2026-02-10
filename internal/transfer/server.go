@@ -49,7 +49,8 @@ func (s *Service) handleAsk(c *gin.Context) {
 		task.Sender.TrustMismatch = peer.TrustMismatch
 	}
 
-	if s.config.GetAutoAccept() || (s.config.IsTrusted(task.Sender.ID) && !task.Sender.TrustMismatch) {
+	if s.config.GetAutoAccept() ||
+		(s.config.IsTrusted(task.Sender.ID) && !task.Sender.TrustMismatch) {
 		task.DecisionChan <- Decision{
 			ID:       task.ID,
 			Accepted: true,
@@ -179,7 +180,15 @@ func (s *Service) handleUpload(c *gin.Context) {
 		_, err := os.Stat(destPath)
 		counter := 1
 		for err == nil {
-			destPath = filepath.Join(savePath, fmt.Sprintf("%s (%d)%s", strings.TrimSuffix(task.FileName, filepath.Ext(task.FileName)), counter, filepath.Ext(task.FileName)))
+			destPath = filepath.Join(
+				savePath,
+				fmt.Sprintf(
+					"%s (%d)%s",
+					strings.TrimSuffix(task.FileName, filepath.Ext(task.FileName)),
+					counter,
+					filepath.Ext(task.FileName),
+				),
+			)
 			counter++
 			_, err = os.Stat(destPath)
 		}
@@ -227,7 +236,13 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer Writer, ctxRead
 	if err != nil {
 		// 发送端断线，任务取消
 		if c.Request.Context().Err() != nil {
-			slog.Info("Sender canceled transfer (Network/Context disconnected)", "id", task.ID, "raw_err", err)
+			slog.Info(
+				"Sender canceled transfer (Network/Context disconnected)",
+				"id",
+				task.ID,
+				"raw_err",
+				err,
+			)
 			task.ErrorMsg = "Sender disconnected"
 			task.Status = TransferStatusCanceled
 			return
@@ -273,7 +288,12 @@ func (s *Service) receive(c *gin.Context, task *Transfer, writer Writer, ctxRead
 	task.Status = TransferStatusCompleted
 }
 
-func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer, ctxReader io.Reader) {
+func (s *Service) receiveFolder(
+	c *gin.Context,
+	savePath string,
+	task *Transfer,
+	ctxReader io.Reader,
+) {
 	defer s.NotifyTransferListUpdate()
 
 	// 创建根目录
@@ -286,7 +306,7 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 		counter++
 		_, err = os.Stat(destPath)
 	}
-	if err := os.MkdirAll(destPath, 0755); err != nil {
+	if err := os.MkdirAll(destPath, 0o750); err != nil {
 		c.JSON(http.StatusInternalServerError, TransferUploadResponse{
 			ID:      task.ID,
 			Message: "Receiver failed to create folder",
@@ -318,7 +338,13 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 			return false
 		}
 		if c.Request.Context().Err() != nil {
-			slog.Info("Transfer canceled by sender (Network disconnect)", "id", task.ID, "stage", stage)
+			slog.Info(
+				"Transfer canceled by sender (Network disconnect)",
+				"id",
+				task.ID,
+				"stage",
+				stage,
+			)
 			task.Status = TransferStatusCanceled
 			task.ErrorMsg = "Sender disconnected"
 			// 发送端已断开，无需也不应再发送 c.JSON
@@ -350,6 +376,14 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 		return true
 	}
 
+	// 获取绝对路径以防止 Zip Slip (G305)
+	// 必须先转换成绝对路径再判断
+	absDestPath, err := filepath.Abs(destPath)
+	if err != nil {
+		handleError(err, "resolve_abs_path")
+		return
+	}
+
 	tr := tar.NewReader(reader)
 	for {
 		header, err := tr.Next()
@@ -360,32 +394,52 @@ func (s *Service) receiveFolder(c *gin.Context, savePath string, task *Transfer,
 			return
 		}
 
-		target := filepath.Join(destPath, header.Name)
-		// 确保路径没有越界
-		if !strings.HasPrefix(target, filepath.Clean(destPath)+string(os.PathSeparator)) {
-			// 非法路径
+		target := filepath.Join(destPath, filepath.Clean(header.Name))
+		absTarget, err := filepath.Abs(target)
+		if err != nil {
+			slog.Error("Failed to resolve absolute path", "path", target, "error", err)
 			continue
 		}
 
+		// 确保路径在目标目录内
+		if !strings.HasPrefix(absTarget, absDestPath+string(os.PathSeparator)) {
+			slog.Warn(
+				"Zip Slip attempt detected",
+				"header_name",
+				header.Name,
+				"resolved_path",
+				absTarget,
+			)
+			continue
+		}
+
+		// 使用安全的绝对路径
+		target = absTarget
+
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o750); err != nil {
 				slog.Error("Failed to create dir", "path", target, "error", err)
 			}
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			f, err := os.OpenFile(
+				target,
+				os.O_CREATE|os.O_RDWR,
+				os.FileMode(header.Mode),
+			) //nolint:gosec
 			if err != nil {
 				slog.Error("Failed to create file", "path", target, "error", err)
 				continue
 			}
 
+			// nolint: gosec
 			if _, err := io.Copy(f, tr); err != nil {
-				f.Close()
+				_ = f.Close()
 				if handleError(err, "write_file_content") {
 					return
 				}
 			}
-			f.Close()
+			_ = f.Close()
 		}
 	}
 

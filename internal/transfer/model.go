@@ -1,8 +1,9 @@
 package transfer
 
 import (
-	"mesh-drop/internal/discovery"
 	"time"
+
+	"mesh-drop/internal/discovery"
 )
 
 type TransferStatus string
@@ -34,9 +35,9 @@ const (
 
 // Transfer
 type Transfer struct {
-	ID         string         `json:"id" binding:"required"`     // 传输会话 ID
-	CreateTime int64          `json:"create_time"`               // 创建时间
-	Sender     discovery.Peer `json:"sender" binding:"required"` // 发送者
+	ID         string         `json:"id"          binding:"required"` // 传输会话 ID
+	CreateTime int64          `json:"create_time"`                    // 创建时间
+	Sender     discovery.Peer `json:"sender"      binding:"required"` // 发送者
 	// FileName 如果 ContentType 为 file，文件名；如果 ContentType 为 folder，文件夹名；如果 ContentType 为 text，空
 	FileName     string         `json:"file_name"`    // 文件名
 	FileSize     int64          `json:"file_size"`    // 文件大小 (字节)

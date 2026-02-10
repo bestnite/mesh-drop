@@ -3,9 +3,10 @@ package transfer
 import (
 	"encoding/json"
 	"log/slog"
-	"mesh-drop/internal/config"
 	"os"
 	"path/filepath"
+
+	"mesh-drop/internal/config"
 )
 
 func (s *Service) SaveHistory() {
@@ -24,7 +25,7 @@ func (s *Service) SaveHistory() {
 	}
 
 	// 写入临时文件
-	if err := os.WriteFile(tempPath, historyJson, 0644); err != nil {
+	if err := os.WriteFile(tempPath, historyJson, 0o600); err != nil {
 		slog.Error("Failed to write temp history file", "error", err, "component", "transfer")
 		return
 	}

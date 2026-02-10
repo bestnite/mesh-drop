@@ -10,13 +10,13 @@ import (
 	"io"
 	"log/slog"
 	"math"
-	"mesh-drop/internal/discovery"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"mesh-drop/internal/discovery"
 )
 
 func (s *Service) SendFiles(target *discovery.Peer, targetIP string, filePaths []string) {
@@ -32,7 +32,15 @@ func (s *Service) SendFile(target *discovery.Peer, targetIP string, filePath str
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		slog.Error("Failed to open file", "path", filePath, "error", err, "component", "transfer-client")
+		slog.Error(
+			"Failed to open file",
+			"path",
+			filePath,
+			"error",
+			err,
+			"component",
+			"transfer-client",
+		)
 		return
 	}
 
@@ -101,7 +109,15 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 
 	size, err := calculateTarSize(ctx, folderPath)
 	if err != nil {
-		slog.Error("Failed to calculate folder size", "path", folderPath, "error", err, "component", "transfer-client")
+		slog.Error(
+			"Failed to calculate folder size",
+			"path",
+			folderPath,
+			"error",
+			err,
+			"component",
+			"transfer-client",
+		)
 		return
 	}
 
@@ -137,7 +153,13 @@ func (s *Service) SendFolder(target *discovery.Peer, targetIP string, folderPath
 		go func(ctx context.Context) {
 			defer w.Close()
 			if err := streamFolderToTar(ctx, w, folderPath); err != nil {
-				slog.Error("Failed to stream folder to tar", "error", err, "component", "transfer-client")
+				slog.Error(
+					"Failed to stream folder to tar",
+					"error",
+					err,
+					"component",
+					"transfer-client",
+				)
 				w.CloseWithError(err)
 			}
 		}(ctx)
@@ -199,7 +221,12 @@ func (s *Service) SendText(target *discovery.Peer, targetIP string, text string)
 }
 
 // ask 向接收端发送传输请求
-func (s *Service) ask(ctx context.Context, target *discovery.Peer, targetIP string, task *Transfer) (TransferAskResponse, error) {
+func (s *Service) ask(
+	ctx context.Context,
+	target *discovery.Peer,
+	targetIP string,
+	task *Transfer,
+) (TransferAskResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return TransferAskResponse{}, err
 	}
@@ -232,7 +259,14 @@ func (s *Service) ask(ctx context.Context, target *discovery.Peer, targetIP stri
 }
 
 // processTransfer 传输数据
-func (s *Service) processTransfer(ctx context.Context, askResp TransferAskResponse, target *discovery.Peer, targetIP string, task *Transfer, payload io.Reader) {
+func (s *Service) processTransfer(
+	ctx context.Context,
+	askResp TransferAskResponse,
+	target *discovery.Peer,
+	targetIP string,
+	task *Transfer,
+	payload io.Reader,
+) {
 	defer func() {
 		s.NotifyTransferListUpdate()
 	}()
@@ -240,7 +274,9 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 	if err := ctx.Err(); err != nil {
 		return
 	}
-	uploadUrl, _ := url.Parse(fmt.Sprintf("https://%s:%d/transfer/upload/%s", targetIP, target.Port, task.ID))
+	uploadUrl, _ := url.Parse(
+		fmt.Sprintf("https://%s:%d/transfer/upload/%s", targetIP, target.Port, task.ID),
+	)
 	query := uploadUrl.Query()
 	query.Add("token", askResp.Token)
 	uploadUrl.RawQuery = query.Encode()
@@ -273,7 +309,15 @@ func (s *Service) processTransfer(ctx context.Context, askResp TransferAskRespon
 		} else {
 			task.Status = TransferStatusError
 			task.ErrorMsg = fmt.Sprintf("Failed to upload file: %v", err)
-			slog.Error("Failed to upload file", "url", uploadUrl.String(), "error", err, "component", "transfer-client")
+			slog.Error(
+				"Failed to upload file",
+				"url",
+				uploadUrl.String(),
+				"error",
+				err,
+				"component",
+				"transfer-client",
+			)
 		}
 		return
 	}
@@ -384,7 +428,15 @@ func streamFolderToTar(ctx context.Context, w io.Writer, srcPath string) error {
 		if relPath == "." {
 			return nil
 		}
-		slog.Debug("Processing file", "path", path, "relPath", relPath, "component", "transfer-client")
+		slog.Debug(
+			"Processing file",
+			"path",
+			path,
+			"relPath",
+			relPath,
+			"component",
+			"transfer-client",
+		)
 
 		header, err := tar.FileInfoHeader(info, "")
 		if err != nil {

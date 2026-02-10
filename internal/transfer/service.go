@@ -5,9 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log/slog"
-	"mesh-drop/internal/config"
-	"mesh-drop/internal/discovery"
-	"mesh-drop/internal/security"
 	"net/http"
 	"path/filepath"
 	"sort"
@@ -16,6 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
+	"mesh-drop/internal/config"
+	"mesh-drop/internal/discovery"
+	"mesh-drop/internal/security"
 )
 
 type Service struct {
@@ -37,12 +37,18 @@ type Service struct {
 	httpClient *http.Client
 }
 
-func NewService(config *config.Config, app *application.App, notifier *notifications.NotificationService, port int, discoveryService *discovery.Service) *Service {
+func NewService(
+	config *config.Config,
+	app *application.App,
+	notifier *notifications.NotificationService,
+	port int,
+	discoveryService *discovery.Service,
+) *Service {
 	gin.SetMode(gin.ReleaseMode)
 
 	// 配置自定义 HTTP 客户端以跳过自签名证书验证
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 	}
 	httpClient := &http.Client{
 		Transport: tr,
@@ -95,7 +101,7 @@ func (s *Service) GetTransferSyncMap() *sync.Map {
 }
 
 func (s *Service) GetTransferList() []*Transfer {
-	var requests []*Transfer = make([]*Transfer, 0)
+	requests := make([]*Transfer, 0)
 	s.transfers.Range(func(key, value any) bool {
 		transfer := value.(*Transfer)
 		requests = append(requests, transfer)
